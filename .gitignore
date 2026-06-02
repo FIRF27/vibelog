@@ -1,5 +1,7 @@
 node_modules/
 dist/
-dist-action/
 *.log
 .env
+
+# Note: dist-action/ is intentionally committed — GitHub Actions run from the
+# bundled output, so the ncc bundle must be tracked in the repo.

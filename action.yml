@@ -1,0 +1,37 @@
+name: "vibelog"
+description: "Generate clean AI release notes from git history + PRs."
+inputs:
+  openai-api-key:
+    description: "OpenAI (or compatible) API key"
+    required: true
+  github-token:
+    description: "Token for fetching PR metadata"
+    required: false
+    default: ${{ github.token }}
+  model:
+    description: "LLM model id"
+    required: false
+  base-url:
+    description: "OpenAI-compatible base URL"
+    required: false
+  version-name:
+    description: "Version heading (default: Unreleased)"
+    required: false
+    default: "Unreleased"
+  from:
+    description: "Start ref (default: last tag)"
+    required: false
+  write:
+    description: "If 'true', prepend into the changelog file"
+    required: false
+    default: "false"
+  output-file:
+    description: "Changelog file when write=true"
+    required: false
+    default: "CHANGELOG.md"
+outputs:
+  changelog:
+    description: "The generated changelog markdown"
+runs:
+  using: "node20"
+  main: "dist-action/index.js"
