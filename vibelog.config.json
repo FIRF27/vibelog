@@ -1,0 +1,7 @@
+{
+  "model": "gpt-4.1-mini",
+  "ignorePatterns": ["^Merge ", "^chore", "^ci", "^build", "^style", "^docs"],
+  "includeAuthors": false,
+  "batchSize": 100,
+  "maxBodyChars": 2000
+}

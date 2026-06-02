@@ -1,0 +1,15 @@
+name: Release notes
+on:
+  workflow_dispatch:
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: changelog
+        uses: ./ # or your-org/vibelog@v0
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          version-name: ${{ github.ref_name }}
+      - run: echo "${{ steps.changelog.outputs.changelog }}"
