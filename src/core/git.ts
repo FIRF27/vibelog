@@ -5,7 +5,13 @@ const FIELD = "\x1f";
 const RECORD = "\x1e";
 
 export const realGitRunner: GitRunner = (args) =>
-  execFileSync("git", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  execFileSync("git", args, {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+    // Capture stderr instead of inheriting it, so git's own error text
+    // (e.g. "No such remote 'origin'") doesn't leak to our output on a caught failure.
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
 export function parsePrNumber(subject: string): number | undefined {
   const squash = subject.match(/\(#(\d+)\)/);
