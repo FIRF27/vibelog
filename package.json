@@ -1,0 +1,46 @@
+{
+  "name": "vibelog",
+  "version": "0.1.0",
+  "description": "Turn messy git history into clean release notes with AI.",
+  "type": "module",
+  "bin": {
+    "vibelog": "dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "action.yml"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:action": "ncc build src/action/index.ts -o dist-action --minify",
+    "dev": "tsx src/cli/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "changelog",
+    "release-notes",
+    "ai",
+    "openai",
+    "git",
+    "github-action",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^3.0.1",
+    "@actions/github": "^9.1.1",
+    "@octokit/rest": "^22.0.1",
+    "commander": "^15.0.0",
+    "openai": "^6.41.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@vercel/ncc": "^0.38.4",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
