@@ -110,4 +110,16 @@ describe("summarize", () => {
     expect(n).toBe(2);
     expect(result.sections).toEqual([]);
   });
+
+  it("throws after the retry when the llm never returns parseable JSON", async () => {
+    let n = 0;
+    const llm = async () => {
+      n++;
+      return "not json";
+    };
+    await expect(summarize(changeSet, { ...DEFAULT_CONFIG, batchSize: 100 }, llm)).rejects.toThrow(
+      /LLM returned unparseable output/,
+    );
+    expect(n).toBe(2);
+  });
 });

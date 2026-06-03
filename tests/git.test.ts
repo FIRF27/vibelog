@@ -26,6 +26,14 @@ describe("resolveRange", () => {
     const runGit: GitRunner = () => "v9\n";
     expect(resolveRange({ from: "a", to: "b" }, runGit)).toEqual({ from: "a", to: "b" });
   });
+
+  it("surfaces a hard git failure (e.g. no tags) instead of swallowing it", () => {
+    const runGit: GitRunner = (args) => {
+      if (args[0] === "describe") throw new Error("fatal: No names found, cannot describe anything.");
+      return "";
+    };
+    expect(() => resolveRange({}, runGit)).toThrow(/No names found/);
+  });
 });
 
 describe("listCommits", () => {

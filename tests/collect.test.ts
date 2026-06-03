@@ -49,4 +49,23 @@ describe("collectChangeSet", () => {
     expect(cs.entries).toHaveLength(4);
     expect(cs.entries.every((e) => e.pr === undefined)).toBe(true);
   });
+
+  it("dedups PR refs across commits, fetching each number once", async () => {
+    const dup: Commit[] = [
+      { sha: "a", subject: "Add x (#12)", body: "", author: "u" },
+      { sha: "b", subject: "More x (#12)", body: "", author: "u" },
+    ];
+    const dupGit: GitRunner = (args) => {
+      if (args[0] === "describe") return "v1\n";
+      if (args[0] === "log") return dup.map((c) => [c.sha, c.subject, c.author, c.body].join("\x1f") + "\0").join("");
+      return "";
+    };
+    let received: number[] = [];
+    const fetchPRs = async (nums: number[]): Promise<Map<number, PullRequest>> => {
+      received = nums;
+      return new Map();
+    };
+    await collectChangeSet({ runGit: dupGit, fetchPRs, ignorePatterns: [] });
+    expect(received).toEqual([12]);
+  });
 });
