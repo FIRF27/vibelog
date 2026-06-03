@@ -6,16 +6,29 @@
   "bin": {
     "vibelog": "dist/cli/index.js"
   },
+  "main": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist",
     "action.yml"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc",
     "build:action": "ncc build src/action/index.ts -o dist-action --minify",
     "dev": "tsx src/cli/index.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepack": "npm run build"
   },
   "keywords": [
     "changelog",
@@ -26,8 +39,16 @@
     "github-action",
     "cli"
   ],
-  "author": "",
+  "author": "FIRF27",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FIRF27/vibelog.git"
+  },
+  "bugs": {
+    "url": "https://github.com/FIRF27/vibelog/issues"
+  },
+  "homepage": "https://github.com/FIRF27/vibelog#readme",
   "dependencies": {
     "@actions/core": "^3.0.1",
     "@actions/github": "^9.1.1",
