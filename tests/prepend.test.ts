@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { prependChangelog } from "../src/cli/index.js";
+import { prependChangelog } from "../src/core/changelogFile.js";
 
 describe("prependChangelog", () => {
   it("creates a file with a header when none exists", () => {

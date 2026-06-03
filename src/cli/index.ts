@@ -14,20 +14,7 @@ import {
 import { realGitRunner } from "../core/git.js";
 import { fetchPullRequests } from "../core/github.js";
 import { configFromEnv, loadConfigFile, mergeConfig } from "../core/config.js";
-
-const HEADER = "# Changelog\n\nAll notable changes to this project are documented in this file.\n\n";
-
-export function prependChangelog(existing: string, block: string): string {
-  const normalized = block.trimEnd() + "\n";
-  if (!existing.includes("# Changelog")) {
-    return HEADER + normalized + "\n";
-  }
-  const idx = existing.indexOf("\n## ");
-  if (idx === -1) return existing.trimEnd() + "\n\n" + normalized;
-  const head = existing.slice(0, idx + 1);
-  const rest = existing.slice(idx + 1);
-  return head + "\n" + normalized + "\n" + rest;
-}
+import { prependChangelog } from "../core/changelogFile.js";
 
 function detectRepo(): { owner: string; repo: string } | undefined {
   const env = process.env.GITHUB_REPOSITORY;

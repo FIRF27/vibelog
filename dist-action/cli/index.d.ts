@@ -1,1 +1,2 @@
-export declare function prependChangelog(existing: string, block: string): string;
+#!/usr/bin/env node
+export {};

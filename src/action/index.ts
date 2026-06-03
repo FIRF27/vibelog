@@ -12,7 +12,7 @@ import {
 import { realGitRunner } from "../core/git.js";
 import { fetchPullRequests, type OctokitLike } from "../core/github.js";
 import { configFromEnv, mergeConfig } from "../core/config.js";
-import { prependChangelog } from "../cli/index.js";
+import { prependChangelog } from "../core/changelogFile.js";
 
 async function run(): Promise<void> {
   try {
@@ -49,6 +49,7 @@ async function run(): Promise<void> {
       version: core.getInput("version-name") || "Unreleased",
       date: new Date().toISOString().slice(0, 10),
       from: core.getInput("from") || undefined,
+      to: core.getInput("to") || undefined,
       deps: { runGit: realGitRunner, llm, fetchPRs },
     });
 

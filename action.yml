@@ -21,6 +21,9 @@ inputs:
   from:
     description: "Start ref (default: last tag)"
     required: false
+  to:
+    description: "End ref (default: HEAD)"
+    required: false
   write:
     description: "If 'true', prepend into the changelog file"
     required: false
