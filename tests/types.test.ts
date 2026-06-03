@@ -10,12 +10,14 @@ describe("SummarizeResultSchema", () => {
     expect(parsed.sections[0].entries[0].refs).toEqual([]);
   });
 
-  it("rejects an unknown category", () => {
-    expect(() =>
-      SummarizeResultSchema.parse({
-        sections: [{ category: "Bogus", entries: [] }],
-      }),
-    ).toThrow();
+  it("drops unknown categories instead of failing the whole batch", () => {
+    const parsed = SummarizeResultSchema.parse({
+      sections: [
+        { category: "Performance", entries: [{ summary: "faster" }] },
+        { category: "Fixed", entries: [{ summary: "bug" }] },
+      ],
+    });
+    expect(parsed.sections.map((s) => s.category)).toEqual(["Fixed"]);
   });
 
   it("ships sane defaults", () => {

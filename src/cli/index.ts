@@ -81,7 +81,13 @@ async function main(): Promise<void> {
   let fetchPRs: ((numbers: number[]) => Promise<Map<number, PullRequest>>) | undefined;
   if (process.env.GITHUB_TOKEN && repo) {
     const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-    fetchPRs = (numbers) => fetchPullRequests(numbers, { octokit, owner: repo.owner, repo: repo.repo });
+    fetchPRs = (numbers) =>
+      fetchPullRequests(numbers, {
+        octokit,
+        owner: repo.owner,
+        repo: repo.repo,
+        onWarn: (m) => console.error(m),
+      });
   } else {
     console.error("vibelog: no GITHUB_TOKEN/repo detected — using commits only.");
   }

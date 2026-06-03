@@ -43,7 +43,7 @@ export declare const SectionSchema: z.ZodObject<{
 export type Section = z.infer<typeof SectionSchema>;
 export declare const SummarizeResultSchema: z.ZodObject<{
     breaking: z.ZodDefault<z.ZodBoolean>;
-    sections: z.ZodArray<z.ZodObject<{
+    sections: z.ZodPreprocess<z.ZodArray<z.ZodObject<{
         category: z.ZodEnum<{
             Added: "Added";
             Changed: "Changed";
@@ -62,7 +62,7 @@ export declare const SummarizeResultSchema: z.ZodObject<{
                 id: z.ZodString;
             }, z.core.$strip>>>;
         }, z.core.$strip>>;
-    }, z.core.$strip>>;
+    }, z.core.$strip>>>;
 }, z.core.$strip>;
 export type SummarizeResult = z.infer<typeof SummarizeResultSchema>;
 export interface Commit {
@@ -95,6 +95,7 @@ export interface Config {
     includeAuthors: boolean;
     batchSize: number;
     maxBodyChars: number;
+    maxBatchChars: number;
 }
 export declare const DEFAULT_CONFIG: Config;
 export type ChatMessage = {

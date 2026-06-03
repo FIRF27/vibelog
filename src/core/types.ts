@@ -30,7 +30,22 @@ export type Section = z.infer<typeof SectionSchema>;
 
 export const SummarizeResultSchema = z.object({
   breaking: z.boolean().default(false),
-  sections: z.array(SectionSchema),
+  // Tolerate out-of-set categories the model sometimes invents (e.g. "Performance"):
+  // drop those sections instead of failing the whole batch/run.
+  sections: z.preprocess(
+    (v) =>
+      Array.isArray(v)
+        ? v.filter(
+            (s) =>
+              s !== null &&
+              typeof s === "object" &&
+              (CATEGORIES as readonly string[]).includes(
+                (s as { category?: unknown }).category as string,
+              ),
+          )
+        : v,
+    z.array(SectionSchema),
+  ),
 });
 export type SummarizeResult = z.infer<typeof SummarizeResultSchema>;
 
@@ -68,6 +83,7 @@ export interface Config {
   includeAuthors: boolean;
   batchSize: number;
   maxBodyChars: number;
+  maxBatchChars: number;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -76,6 +92,7 @@ export const DEFAULT_CONFIG: Config = {
   includeAuthors: false,
   batchSize: 100,
   maxBodyChars: 2000,
+  maxBatchChars: 60000,
 };
 
 export type ChatMessage = { role: "system" | "user"; content: string };

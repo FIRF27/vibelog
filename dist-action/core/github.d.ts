@@ -26,4 +26,5 @@ export declare function fetchPullRequests(numbers: number[], ctx: {
     octokit: OctokitLike;
     owner: string;
     repo: string;
+    onWarn?: (msg: string) => void;
 }): Promise<Map<number, PullRequest>>;

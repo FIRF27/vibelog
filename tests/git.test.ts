@@ -12,6 +12,9 @@ describe("parsePrNumber", () => {
   it("returns undefined when absent", () => {
     expect(parsePrNumber("wip stuff")).toBeUndefined();
   });
+  it("returns the trailing PR for a revert with a quoted inner number", () => {
+    expect(parsePrNumber('Revert "Add thing (#10)" (#20)')).toBe(20);
+  });
 });
 
 describe("resolveRange", () => {
@@ -26,16 +29,27 @@ describe("resolveRange", () => {
 });
 
 describe("listCommits", () => {
-  it("parses git log records", () => {
+  // Fields are %H %s %an %b joined by \x1f, records terminated by NUL (-z).
+  it("parses NUL-terminated git log records", () => {
     const log =
-      ["sha1", "Add x (#1)", "body one", "Alice"].join("\x1f") +
-      "\x1e" +
-      ["sha2", "Fix y", "", "Bob"].join("\x1f") +
-      "\x1e";
+      ["sha1", "Add x (#1)", "Alice", "body one"].join("\x1f") +
+      "\0" +
+      ["sha2", "Fix y", "Bob", ""].join("\x1f") +
+      "\0";
     const runGit: GitRunner = () => log;
     const commits = listCommits("v1", "HEAD", runGit);
     expect(commits).toHaveLength(2);
     expect(commits[0]).toEqual({ sha: "sha1", subject: "Add x (#1)", body: "body one", author: "Alice" });
     expect(commits[1].subject).toBe("Fix y");
+  });
+
+  it("keeps a multi-line body and one containing the field separator intact (no phantom commit)", () => {
+    const body = "line one\nline two with \x1f embedded sep";
+    const log = ["sha3", "Add z", "Carol", body].join("\x1f") + "\0";
+    const runGit: GitRunner = () => log;
+    const commits = listCommits("v1", "HEAD", runGit);
+    expect(commits).toHaveLength(1);
+    expect(commits[0].body).toBe(body);
+    expect(commits[0].author).toBe("Carol");
   });
 });

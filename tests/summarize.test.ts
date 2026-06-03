@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chunk, mergeResults, buildMessages, summarize } from "../src/core/summarize.js";
+import { chunk, mergeResults, buildMessages, batchEntries, summarize } from "../src/core/summarize.js";
 import { DEFAULT_CONFIG } from "../src/core/types.js";
 import type { ChangeSet, SummarizeResult } from "../src/core/types.js";
 
@@ -51,6 +51,38 @@ describe("buildMessages", () => {
     const msgs = buildMessages(changeSet.entries, DEFAULT_CONFIG);
     const user = msgs.find((m) => m.role === "user")!.content;
     expect(user).toContain("Add dark mode");
+  });
+
+  it("truncates on code points, never emitting a lone surrogate", () => {
+    // 4 emoji, limit 3 code points: code-unit slicing (the old bug) would cut mid-pair.
+    const entries = [{ commit: { sha: "s", subject: "x", body: "🌙🌙🌙🌙", author: "a" } }];
+    const msgs = buildMessages(entries, { ...DEFAULT_CONFIG, maxBodyChars: 3 });
+    const user = msgs.find((m) => m.role === "user")!.content;
+    expect(user).toContain("🌙🌙🌙"); // exactly 3 full emoji kept
+    expect(user).not.toContain("🌙🌙🌙🌙"); // truncated
+    expect(user).not.toContain("�"); // no U+FFFD
+    // No LONE surrogate (valid surrogate pairs are fine).
+    expect(user).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
+  });
+});
+
+describe("batchEntries", () => {
+  const mk = (n: number, bodyLen = 0) => ({
+    commit: { sha: `s${n}`, subject: "s", body: "y".repeat(bodyLen), author: "a" },
+  });
+
+  it("splits when the char budget is exceeded even under batchSize", () => {
+    const entries = [mk(1, 1000), mk(2, 1000), mk(3, 1000)];
+    const batches = batchEntries(entries, { ...DEFAULT_CONFIG, batchSize: 100, maxBatchChars: 1500 });
+    expect(batches.length).toBe(3); // each ~1025 chars; 1500 budget fits only one
+    expect(batches.flat()).toHaveLength(3); // nothing dropped
+  });
+
+  it("never hangs when batchSize is 0 (clamps to >=1)", () => {
+    const entries = [mk(1), mk(2)];
+    const batches = batchEntries(entries, { ...DEFAULT_CONFIG, batchSize: 0, maxBatchChars: 999999 });
+    expect(batches.length).toBe(2);
+    expect(batches.flat()).toHaveLength(2);
   });
 });
 

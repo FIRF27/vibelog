@@ -20,8 +20,9 @@ describe("collectChangeSet", () => {
   const runGit: GitRunner = (args) => {
     if (args[0] === "describe") return "v1\n";
     if (args[0] === "log") {
+      // matches listCommits' -z format: %H %s %an %b joined by \x1f, NUL-terminated
       return commits
-        .map((c) => [c.sha, c.subject, c.body, c.author].join("\x1f") + "\x1e")
+        .map((c) => [c.sha, c.subject, c.author, c.body].join("\x1f") + "\0")
         .join("");
     }
     return "";

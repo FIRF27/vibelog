@@ -45,22 +45,53 @@ Rules:
 is backward-incompatible.
 - Put the PR number in refs as type "pr" when present, otherwise the commit sha as type "commit".`;
 
+// Code-point-safe truncation (Array.from iterates by code point, so it never splits
+// a surrogate pair into a lone surrogate / U+FFFD).
+function truncate(s: string, max: number): string {
+  return Array.from(s).slice(0, max).join("");
+}
+
+export function entryBlock(e: ChangeEntry, maxBodyChars: number): string {
+  const lines = [`- commit ${e.commit.sha.slice(0, 7)}: ${e.commit.subject}`];
+  if (e.commit.body) lines.push(`  body: ${truncate(e.commit.body, maxBodyChars)}`);
+  if (e.pr) {
+    lines.push(`  pr #${e.pr.number}: ${e.pr.title}`);
+    if (e.pr.labels.length) lines.push(`  labels: ${e.pr.labels.join(", ")}`);
+    if (e.pr.body) lines.push(`  pr-body: ${truncate(e.pr.body, maxBodyChars)}`);
+  }
+  return lines.join("\n");
+}
+
 export function buildMessages(entries: ChangeEntry[], config: Config): ChatMessage[] {
-  const trunc = (s: string) => s.slice(0, config.maxBodyChars);
-  const blocks = entries.map((e) => {
-    const lines = [`- commit ${e.commit.sha.slice(0, 7)}: ${e.commit.subject}`];
-    if (e.commit.body) lines.push(`  body: ${trunc(e.commit.body)}`);
-    if (e.pr) {
-      lines.push(`  pr #${e.pr.number}: ${e.pr.title}`);
-      if (e.pr.labels.length) lines.push(`  labels: ${e.pr.labels.join(", ")}`);
-      if (e.pr.body) lines.push(`  pr-body: ${trunc(e.pr.body)}`);
-    }
-    return lines.join("\n");
-  });
+  const blocks = entries.map((e) => entryBlock(e, config.maxBodyChars));
   return [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "user", content: `Changes:\n${blocks.join("\n\n")}` },
   ];
+}
+
+// Greedy size-aware batching: close a batch when it would exceed either the entry
+// count (batchSize, clamped to >=1 so a bad config can never produce a non-advancing
+// loop) or the approximate char budget (maxBatchChars). A single oversized entry still
+// gets its own batch rather than being dropped.
+export function batchEntries(entries: ChangeEntry[], config: Config): ChangeEntry[][] {
+  const maxCount = Math.max(1, Math.floor(config.batchSize));
+  const maxChars = Math.max(1, Math.floor(config.maxBatchChars));
+  const batches: ChangeEntry[][] = [];
+  let current: ChangeEntry[] = [];
+  let chars = 0;
+  for (const e of entries) {
+    const size = entryBlock(e, config.maxBodyChars).length;
+    if (current.length > 0 && (current.length >= maxCount || chars + size > maxChars)) {
+      batches.push(current);
+      current = [];
+      chars = 0;
+    }
+    current.push(e);
+    chars += size;
+  }
+  if (current.length > 0) batches.push(current);
+  return batches;
 }
 
 async function summarizeBatch(entries: ChangeEntry[], config: Config, llm: Llm): Promise<SummarizeResult> {
@@ -71,13 +102,16 @@ async function summarizeBatch(entries: ChangeEntry[], config: Config, llm: Llm):
       return SummarizeResultSchema.parse(JSON.parse(raw));
     } catch (err) {
       if (attempt === 1) throw new Error(`LLM returned unparseable output: ${String(err)}`);
+      // Feed the failure back so the retry can repair its output instead of
+      // (at low temperature) likely reproducing the same invalid response.
+      messages.push({ role: "user", content: `Your previous response was invalid: ${String(err)}. Respond with ONLY valid JSON matching the schema.` });
     }
   }
   throw new Error("unreachable");
 }
 
 export async function summarize(changeSet: ChangeSet, config: Config, llm: Llm): Promise<SummarizeResult> {
-  const batches = chunk(changeSet.entries, config.batchSize);
+  const batches = batchEntries(changeSet.entries, config);
   const results: SummarizeResult[] = [];
   for (const batch of batches) results.push(await summarizeBatch(batch, config, llm));
   return mergeResults(results);

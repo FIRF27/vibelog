@@ -30,7 +30,8 @@ async function run(): Promise<void> {
     let fetchPRs: ((numbers: number[]) => Promise<Map<number, PullRequest>>) | undefined;
     if (token) {
       const octokit = getOctokit(token) as unknown as OctokitLike;
-      fetchPRs = (numbers) => fetchPullRequests(numbers, { octokit, owner, repo });
+      fetchPRs = (numbers) =>
+        fetchPullRequests(numbers, { octokit, owner, repo, onWarn: (m) => core.warning(m) });
     }
 
     const llm = async (messages: ChatMessage[]): Promise<string> => {
