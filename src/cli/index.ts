@@ -13,7 +13,7 @@ import {
 } from "../core/index.js";
 import { realGitRunner } from "../core/git.js";
 import { fetchPullRequests } from "../core/github.js";
-import { configFromEnv, loadConfigFile, mergeConfig } from "../core/config.js";
+import { configFromEnv, loadConfigFile, mergeConfig, readJsonConfig } from "../core/config.js";
 import { prependChangelog } from "../core/changelogFile.js";
 
 function detectRepo(): { owner: string; repo: string } | undefined {
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
   };
   const config = mergeConfig({
     defaults: DEFAULT_CONFIG,
-    fileConfig: opts.config ? JSON.parse(readFileSync(opts.config, "utf8")) : loadConfigFile(process.cwd()),
+    fileConfig: opts.config ? readJsonConfig(opts.config) : loadConfigFile(process.cwd()),
     env: configFromEnv(process.env),
     flags,
   });

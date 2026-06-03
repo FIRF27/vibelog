@@ -95,6 +95,19 @@ export const DEFAULT_CONFIG: Config = {
   maxBatchChars: 60000,
 };
 
+// Runtime validation for user-supplied config files. strictObject rejects unknown keys
+// so typos surface clearly; positive ints guard against hangs (batchSize) and nonsense.
+export const PartialConfigSchema = z.strictObject({
+  model: z.string().min(1).optional(),
+  baseUrl: z.string().optional(),
+  repoUrl: z.string().optional(),
+  ignorePatterns: z.array(z.string()).optional(),
+  includeAuthors: z.boolean().optional(),
+  batchSize: z.number().int().positive().optional(),
+  maxBodyChars: z.number().int().positive().optional(),
+  maxBatchChars: z.number().int().positive().optional(),
+});
+
 export type ChatMessage = { role: "system" | "user"; content: string };
 export type GitRunner = (args: string[]) => string;
 export type Llm = (messages: ChatMessage[]) => Promise<string>;

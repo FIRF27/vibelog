@@ -14,6 +14,10 @@ describe("filterCommits", () => {
     const kept = filterCommits(commits, ["^Merge ", "^chore"]);
     expect(kept.map((c) => c.sha)).toEqual(["s1", "s4"]);
   });
+
+  it("throws a clear error naming an invalid regex pattern", () => {
+    expect(() => filterCommits(commits, ["("])).toThrow(/invalid ignorePattern "\("/);
+  });
 });
 
 describe("collectChangeSet", () => {

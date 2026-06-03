@@ -2,7 +2,15 @@ import { resolveRange, listCommits, parsePrNumber } from "./git.js";
 import type { ChangeEntry, ChangeSet, Commit, GitRunner, PrFetcher, PullRequest } from "./types.js";
 
 export function filterCommits(commits: Commit[], ignorePatterns: string[]): Commit[] {
-  const regexes = ignorePatterns.map((p) => new RegExp(p, "i"));
+  const regexes = ignorePatterns.map((p) => {
+    try {
+      return new RegExp(p, "i");
+    } catch (e) {
+      throw new Error(
+        `invalid ignorePattern ${JSON.stringify(p)}: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  });
   return commits.filter((c) => !regexes.some((re) => re.test(c.subject)));
 }
 

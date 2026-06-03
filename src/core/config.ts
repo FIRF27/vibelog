@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { DEFAULT_CONFIG, type Config } from "./types.js";
+import { DEFAULT_CONFIG, PartialConfigSchema, type Config } from "./types.js";
 
 type Env = Record<string, string | undefined>;
 
@@ -23,10 +23,39 @@ export function configFromEnv(env: Env): Partial<Config> {
   });
 }
 
+export function parseConfigText(raw: string, source: string): Partial<Config> {
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`invalid JSON in config file ${source}: ${(err as Error).message}`);
+  }
+  const res = PartialConfigSchema.safeParse(json);
+  if (!res.success) {
+    const msg = res.error.issues
+      .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+      .join("; ");
+    throw new Error(`invalid config (${source}): ${msg}`);
+  }
+  return res.data;
+}
+
+export function readJsonConfig(path: string): Partial<Config> {
+  let raw: string;
+  try {
+    raw = readFileSync(path, "utf8");
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code === "ENOENT") throw new Error(`config file not found: ${path}`);
+    throw new Error(`cannot read config file ${path}: ${e.message}`);
+  }
+  return parseConfigText(raw, path);
+}
+
 export function loadConfigFile(cwd: string): Partial<Config> {
   const path = join(cwd, "vibelog.config.json");
   if (!existsSync(path)) return {};
-  return JSON.parse(readFileSync(path, "utf8")) as Partial<Config>;
+  return readJsonConfig(path);
 }
 
 export function mergeConfig(opts: {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { configFromEnv, mergeConfig } from "../src/core/config.js";
+import { configFromEnv, mergeConfig, parseConfigText, readJsonConfig } from "../src/core/config.js";
 import { DEFAULT_CONFIG } from "../src/core/types.js";
 
 describe("config", () => {
@@ -30,5 +30,35 @@ describe("config", () => {
       flags: { model: undefined },
     });
     expect(merged.model).toBe("env-model");
+  });
+});
+
+describe("config validation", () => {
+  it("parses a valid config", () => {
+    expect(parseConfigText('{"model":"x","batchSize":50}', "t").batchSize).toBe(50);
+  });
+
+  it("rejects malformed JSON, naming the file", () => {
+    expect(() => parseConfigText("{ bad json", "my.json")).toThrow(/invalid JSON in config file my\.json/);
+  });
+
+  it("rejects a wrong-typed value", () => {
+    expect(() => parseConfigText('{"batchSize":"100"}', "t")).toThrow(/invalid config/);
+  });
+
+  it("rejects batchSize 0 (would hang batching)", () => {
+    expect(() => parseConfigText('{"batchSize":0}', "t")).toThrow(/batchSize/);
+  });
+
+  it("rejects a non-array ignorePatterns", () => {
+    expect(() => parseConfigText('{"ignorePatterns":"^chore"}', "t")).toThrow(/ignorePatterns/);
+  });
+
+  it("rejects unknown keys (typo guard)", () => {
+    expect(() => parseConfigText('{"modle":"x"}', "t")).toThrow(/invalid config/);
+  });
+
+  it("reports a missing config file path", () => {
+    expect(() => readJsonConfig("/no/such/dir/vibelog.config.json")).toThrow(/config file not found/);
   });
 });
