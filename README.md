@@ -1,5 +1,9 @@
 # vibelog
 
+[![CI](https://github.com/FIRF27/vibelog/actions/workflows/ci.yml/badge.svg)](https://github.com/FIRF27/vibelog/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
+
 > Turn messy git history into clean release notes — with AI.
 
 Most changelog tools (`git-cliff`, `release-please`, `conventional-changelog`) are
@@ -97,7 +101,7 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 } # full history + tags
       - id: changelog
-        uses: your-org/vibelog@v0
+        uses: FIRF27/vibelog@v0 # pin to a published tag/release, or a commit SHA
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           version-name: ${{ github.ref_name }}

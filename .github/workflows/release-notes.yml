@@ -8,7 +8,7 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - id: changelog
-        uses: ./ # or your-org/vibelog@v0
+        uses: ./ # or FIRF27/vibelog@v0 once a release tag is published
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           version-name: ${{ github.ref_name }}

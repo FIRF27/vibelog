@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  bundle-sync:
+    # Ensures the committed Action bundle (dist-action/) matches a fresh build of the
+    # source, so the published Action never runs stale code.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build:action
+      - name: Verify dist-action is in sync with source
+        run: |
+          if ! git diff --quiet -- dist-action; then
+            echo "::error::dist-action/ is stale. Run 'npm run build:action' and commit the result."
+            git diff --stat -- dist-action
+            exit 1
+          fi
