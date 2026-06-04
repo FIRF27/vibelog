@@ -12,7 +12,8 @@ export type Category = (typeof CATEGORIES)[number];
 
 export const RefSchema = z.object({
   type: z.enum(["pr", "commit"]),
-  id: z.string(),
+  // Models routinely emit the PR number as a JSON number; coerce 42 -> "42" losslessly.
+  id: z.coerce.string(),
 });
 export type Ref = z.infer<typeof RefSchema>;
 
@@ -24,28 +25,47 @@ export type Entry = z.infer<typeof EntrySchema>;
 
 export const SectionSchema = z.object({
   category: z.enum(CATEGORIES),
-  entries: z.array(EntrySchema),
+  // Drop blank/whitespace-only bullets before strict validation, so one empty summary
+  // from the model can't reject the whole batch.
+  entries: z.preprocess(
+    (v) =>
+      Array.isArray(v)
+        ? v.filter(
+            (e) =>
+              e !== null &&
+              typeof e === "object" &&
+              typeof (e as { summary?: unknown }).summary === "string" &&
+              (e as { summary: string }).summary.trim().length > 0,
+          )
+        : v,
+    z.array(EntrySchema),
+  ),
 });
 export type Section = z.infer<typeof SectionSchema>;
 
 export const SummarizeResultSchema = z.object({
   breaking: z.boolean().default(false),
   // Tolerate out-of-set categories the model sometimes invents (e.g. "Performance"):
-  // drop those sections instead of failing the whole batch/run.
-  sections: z.preprocess(
-    (v) =>
-      Array.isArray(v)
-        ? v.filter(
-            (s) =>
-              s !== null &&
-              typeof s === "object" &&
-              (CATEGORIES as readonly string[]).includes(
-                (s as { category?: unknown }).category as string,
-              ),
-          )
-        : v,
-    z.array(SectionSchema),
-  ),
+  // drop those sections instead of failing the whole batch/run. The trailing
+  // .default([]) makes a null-content "{}" response degrade to a no-op rather than
+  // aborting the run (model refusals, length cutoffs, and some compatible endpoints
+  // legitimately return empty content).
+  sections: z
+    .preprocess(
+      (v) =>
+        Array.isArray(v)
+          ? v.filter(
+              (s) =>
+                s !== null &&
+                typeof s === "object" &&
+                (CATEGORIES as readonly string[]).includes(
+                  (s as { category?: unknown }).category as string,
+                ),
+            )
+          : v,
+      z.array(SectionSchema),
+    )
+    .default([]),
 });
 export type SummarizeResult = z.infer<typeof SummarizeResultSchema>;
 

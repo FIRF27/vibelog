@@ -15,6 +15,13 @@ describe("parsePrNumber", () => {
   it("returns the trailing PR for a revert with a quoted inner number", () => {
     expect(parsePrNumber('Revert "Add thing (#10)" (#20)')).toBe(20);
   });
+  it("catches (#N) followed by trailing punctuation or tags", () => {
+    expect(parsePrNumber("Add feature (#5).")).toBe(5);
+    expect(parsePrNumber("fix(api): handle null (#88) [skip ci]")).toBe(88);
+  });
+  it("does not misattribute an inline issue ref when a real (#N) is present", () => {
+    expect(parsePrNumber("feat: add export (#42), closes #40")).toBe(42);
+  });
 });
 
 describe("resolveRange", () => {

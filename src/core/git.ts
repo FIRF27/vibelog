@@ -13,10 +13,11 @@ export const realGitRunner: GitRunner = (args) =>
   });
 
 export function parsePrNumber(subject: string): number | undefined {
-  // Prefer the trailing "(#N)" squash/merge convention so a quoted inner number
-  // (e.g. a revert: Revert "Add x (#10)" (#20)) resolves to the real PR (#20).
-  const trailing = subject.match(/\(#(\d+)\)\s*$/);
-  if (trailing) return Number(trailing[1]);
+  // Prefer the LAST parenthesized "(#N)": a revert's quoted inner number
+  // (Revert "Add x (#10)" (#20)) resolves to the real PR (#20), while still
+  // catching "(#N)" followed by trailing punctuation/tags ("(#5).", "(#88) [skip ci]").
+  const paren = [...subject.matchAll(/\(#(\d+)\)/g)];
+  if (paren.length) return Number(paren[paren.length - 1][1]);
   const inline = subject.match(/(?:^|\s)#(\d+)\b/);
   return inline ? Number(inline[1]) : undefined;
 }

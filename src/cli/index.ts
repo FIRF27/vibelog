@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { writeFileSync, readFileSync, existsSync } from "node:fs";
+import { writeFileSync, readFileSync, existsSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import OpenAI from "openai";
@@ -118,8 +118,21 @@ async function main(): Promise<void> {
   }
 }
 
+// True when this module is the entry point. realpath-resolves BOTH sides because npm
+// installs the bin as a symlink (node_modules/.bin/vibelog -> ../vibelog/dist/cli/index.js)
+// and Node sets argv[1] to the unresolved symlink path while import.meta.url is the real
+// file — a strict === would never match, leaving the published CLI a silent no-op.
+export function isDirectRun(moduleUrl: string, argv1: string | undefined): boolean {
+  if (!argv1) return false;
+  try {
+    return realpathSync(fileURLToPath(moduleUrl)) === realpathSync(argv1);
+  } catch {
+    return false;
+  }
+}
+
 // Only run when invoked directly as a binary, not when imported (tests / action shell).
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (isDirectRun(import.meta.url, process.argv[1])) {
   main().catch((err) => {
     console.error(`vibelog: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);

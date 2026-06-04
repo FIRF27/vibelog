@@ -122,4 +122,12 @@ describe("summarize", () => {
     );
     expect(n).toBe(2);
   });
+
+  it("does not abort the run when the model returns null content (the '{}' fallback)", async () => {
+    // makeLlm substitutes "{}" when message.content is null (refusal / length cutoff /
+    // some OpenAI-compatible endpoints). That must degrade to an empty result, not crash.
+    const llm = async () => "{}";
+    const result = await summarize(changeSet, { ...DEFAULT_CONFIG, batchSize: 100 }, llm);
+    expect(result.sections).toEqual([]);
+  });
 });

@@ -6,7 +6,7 @@ export declare const RefSchema: z.ZodObject<{
         pr: "pr";
         commit: "commit";
     }>;
-    id: z.ZodString;
+    id: z.ZodCoercedString<unknown>;
 }, z.core.$strip>;
 export type Ref = z.infer<typeof RefSchema>;
 export declare const EntrySchema: z.ZodObject<{
@@ -16,7 +16,7 @@ export declare const EntrySchema: z.ZodObject<{
             pr: "pr";
             commit: "commit";
         }>;
-        id: z.ZodString;
+        id: z.ZodCoercedString<unknown>;
     }, z.core.$strip>>>;
 }, z.core.$strip>;
 export type Entry = z.infer<typeof EntrySchema>;
@@ -29,21 +29,21 @@ export declare const SectionSchema: z.ZodObject<{
         Fixed: "Fixed";
         Security: "Security";
     }>;
-    entries: z.ZodArray<z.ZodObject<{
+    entries: z.ZodPreprocess<z.ZodArray<z.ZodObject<{
         summary: z.ZodString;
         refs: z.ZodDefault<z.ZodArray<z.ZodObject<{
             type: z.ZodEnum<{
                 pr: "pr";
                 commit: "commit";
             }>;
-            id: z.ZodString;
+            id: z.ZodCoercedString<unknown>;
         }, z.core.$strip>>>;
-    }, z.core.$strip>>;
+    }, z.core.$strip>>>;
 }, z.core.$strip>;
 export type Section = z.infer<typeof SectionSchema>;
 export declare const SummarizeResultSchema: z.ZodObject<{
     breaking: z.ZodDefault<z.ZodBoolean>;
-    sections: z.ZodPreprocess<z.ZodArray<z.ZodObject<{
+    sections: z.ZodDefault<z.ZodPreprocess<z.ZodArray<z.ZodObject<{
         category: z.ZodEnum<{
             Added: "Added";
             Changed: "Changed";
@@ -52,17 +52,17 @@ export declare const SummarizeResultSchema: z.ZodObject<{
             Fixed: "Fixed";
             Security: "Security";
         }>;
-        entries: z.ZodArray<z.ZodObject<{
+        entries: z.ZodPreprocess<z.ZodArray<z.ZodObject<{
             summary: z.ZodString;
             refs: z.ZodDefault<z.ZodArray<z.ZodObject<{
                 type: z.ZodEnum<{
                     pr: "pr";
                     commit: "commit";
                 }>;
-                id: z.ZodString;
+                id: z.ZodCoercedString<unknown>;
             }, z.core.$strip>>>;
-        }, z.core.$strip>>;
-    }, z.core.$strip>>>;
+        }, z.core.$strip>>>;
+    }, z.core.$strip>>>>;
 }, z.core.$strip>;
 export type SummarizeResult = z.infer<typeof SummarizeResultSchema>;
 export interface Commit {
