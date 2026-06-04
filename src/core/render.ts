@@ -6,6 +6,14 @@ export interface RenderMeta {
   repoUrl?: string;
 }
 
+// C0/C1 control chars (the whitespace ones are handled by the \s collapse first) plus
+// bidi/directional formatting chars that could visually reorder rendered text.
+// Built via RegExp() to avoid embedding literal control characters in source.
+const UNSAFE_CHARS = new RegExp(
+  "[\\u0000-\\u001f\\u007f-\\u009f\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]",
+  "g",
+);
+
 // Ref ids are PR numbers (digits) or commit shas (hex). Strip anything else so a
 // crafted id like "1](http://evil)" can't break out of the markdown link.
 function safeId(id: string): string {
@@ -39,9 +47,10 @@ export function renderChangelog(result: SummarizeResult, meta: RenderMeta): stri
     if (!section || section.entries.length === 0) continue;
     lines.push(`### ${category}`, "");
     for (const entry of section.entries) {
-      // Collapse newlines/whitespace so an LLM summary can't forge new "## "/"### "
-      // headers or list items inside the changelog (and stays a single clean bullet).
-      const summary = entry.summary.replace(/\s+/g, " ").trim();
+      // Collapse newlines/whitespace (so an LLM summary can't forge "## "/"### " headers
+      // or list items), THEN strip remaining control + bidi chars (so e.g. U+202E can't
+      // visually reorder the rendered changelog).
+      const summary = entry.summary.replace(/\s+/g, " ").replace(UNSAFE_CHARS, "").trim();
       const refs = entry.refs.map((r) => renderRef(r, meta.repoUrl)).filter(Boolean).join(", ");
       lines.push(refs ? `- ${summary} (${refs})` : `- ${summary}`);
     }

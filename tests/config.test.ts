@@ -10,6 +10,12 @@ describe("config", () => {
     expect(c.baseUrl).toBe("http://x");
   });
 
+  it("treats empty env values as unset (no masking, no empty model)", () => {
+    const c = configFromEnv({ OPENAI_BASE_URL: "", VIBELOG_BASE_URL: "http://fallback", VIBELOG_MODEL: "" });
+    expect(c.baseUrl).toBe("http://fallback"); // empty OPENAI_BASE_URL did not mask the fallback
+    expect("model" in c).toBe(false); // empty model dropped, not sent to the LLM
+  });
+
   it("applies precedence flags > env > file > defaults", () => {
     const merged = mergeConfig({
       defaults: DEFAULT_CONFIG,

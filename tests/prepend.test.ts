@@ -54,10 +54,28 @@ describe("prependChangelog", () => {
     expect(out).toContain("- old");
   });
 
-  it("normalizes CRLF so output is not mixed line endings", () => {
+  it("normalizes CRLF in both existing and block so output has no mixed endings", () => {
     const existing = "# Changelog\r\n\r\n## [1.0.0]\r\n\r\n- old\r\n";
-    const out = prependChangelog(existing, "## [1.1.0]\n\n- new\n");
+    const out = prependChangelog(existing, "## [1.1.0]\r\n\r\n- new\r\n");
     expect(out).not.toContain("\r");
     expect(out.indexOf("## [1.1.0]")).toBeLessThan(out.indexOf("## [1.0.0]"));
+  });
+
+  it("does not desync on mixed fence markers (~~~ inside a ``` example)", () => {
+    const existing = "# Changelog\n\nex:\n```\n## [9.9.9] fake\n~~~\n```\n\n## [1.0.0]\n\n- real\n";
+    const out = prependChangelog(existing, "## [2.0.0]\n\n- new\n");
+    // new block anchors at the REAL heading after the closed fence, not inside it
+    expect(out.indexOf("## [2.0.0]")).toBeGreaterThan(out.lastIndexOf("```"));
+    expect(out.indexOf("## [2.0.0]")).toBeLessThan(out.indexOf("## [1.0.0]"));
+    expect(out).toContain("- real");
+  });
+
+  it("does NOT splice into a closed fence whose code is the only '## ' line", () => {
+    const existing = "# Changelog\n\nUsage:\n\n```md\n## [1.2.3]\n- example\n```\n\nThanks.\n";
+    const out = prependChangelog(existing, "## [2.0.0]\n\n- new\n");
+    // the new block goes AFTER all existing content, not between the ``` fences
+    expect(out.indexOf("## [2.0.0]")).toBeGreaterThan(out.lastIndexOf("```"));
+    expect(out).toContain("## [1.2.3]"); // example preserved verbatim inside the fence
+    expect(out).toContain("Thanks.");
   });
 });

@@ -13,10 +13,12 @@ function pickDefined<T extends object>(obj: T): Partial<T> {
 }
 
 export function configFromEnv(env: Env): Partial<Config> {
+  // Treat empty strings as unset (|| not ??), so an empty OPENAI_BASE_URL doesn't mask a
+  // valid VIBELOG_BASE_URL and an empty model doesn't reach the LLM call.
   return pickDefined({
-    model: env.VIBELOG_MODEL,
-    baseUrl: env.OPENAI_BASE_URL ?? env.VIBELOG_BASE_URL,
-    repoUrl: env.VIBELOG_REPO_URL,
+    model: env.VIBELOG_MODEL || undefined,
+    baseUrl: env.OPENAI_BASE_URL || env.VIBELOG_BASE_URL || undefined,
+    repoUrl: env.VIBELOG_REPO_URL || undefined,
   });
 }
 

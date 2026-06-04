@@ -64,9 +64,9 @@ async function main(): Promise<void> {
 
   const opts = program.opts();
   const flags: Partial<Config> = {
-    model: opts.model,
-    baseUrl: opts.baseUrl,
-    repoUrl: opts.repoUrl,
+    model: opts.model || undefined,
+    baseUrl: opts.baseUrl || undefined,
+    repoUrl: opts.repoUrl || undefined,
   };
   const config = mergeConfig({
     defaults: DEFAULT_CONFIG,
@@ -103,7 +103,11 @@ async function main(): Promise<void> {
   });
 
   if (markdown === null) {
-    console.error(`vibelog: no changes since ${opts.from ?? "last tag"}.`);
+    console.error(
+      opts.from
+        ? `vibelog: no changes since ${opts.from}.`
+        : `vibelog: no changes found to release.`,
+    );
     process.exit(0);
   }
 

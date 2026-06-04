@@ -6,8 +6,8 @@ export const HEADER =
   "# Changelog\n\nAll notable changes to this project are documented in this file.\n\n";
 
 export function prependChangelog(existing: string, block: string): string {
-  const normalized = block.trimEnd() + "\n";
-  // Normalize CRLF so a Windows-authored file doesn't end up with mixed line endings.
+  // Normalize CRLF on BOTH inputs so output never ends up with mixed line endings.
+  const normalized = block.replace(/\r\n/g, "\n").trimEnd() + "\n";
   const doc = existing.replace(/\r\n/g, "\n");
   // Only the truly-empty case gets a fresh header — NEVER overwrite a non-empty file
   // just because it lacks the literal "# Changelog" title (e.g. "# Release Notes").
@@ -16,29 +16,33 @@ export function prependChangelog(existing: string, block: string): string {
   }
 
   // Find the first "## " heading not inside a fenced code block, so a "## " line in an
-  // intro example (```...```) can't become a bogus insertion anchor. Track the first
-  // "## " line overall as a fallback for malformed input (e.g. an unclosed fence).
+  // intro example (```...```) can't become a bogus insertion anchor. Track the fence by
+  // its MARKER CHARACTER (a fence closes only on the same char it opened with), so a
+  // "~~~" line inside a "```" fence is literal content, not a toggle.
   const lines = doc.split("\n");
-  let inFence = false;
+  let fenceChar = "";
   let anchor = -1;
   let firstHeadingAny = -1;
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trimStart();
-    if (trimmed.startsWith("```") || trimmed.startsWith("~~~")) {
-      inFence = !inFence;
+    const marker = trimmed.startsWith("```") ? "`" : trimmed.startsWith("~~~") ? "~" : "";
+    if (marker) {
+      if (fenceChar === "") fenceChar = marker;
+      else if (fenceChar === marker) fenceChar = "";
       continue;
     }
     if (lines[i].startsWith("## ")) {
       if (firstHeadingAny === -1) firstHeadingAny = i;
-      if (!inFence) {
+      if (fenceChar === "") {
         anchor = i;
         break;
       }
     }
   }
-  // If the fence-aware scan found nothing but headings exist (e.g. an unclosed fence
-  // suppressed the scan), still prepend at the first heading rather than appending.
-  if (anchor === -1) anchor = firstHeadingAny;
+  // Only fall back to the first heading when a fence was left UNCLOSED (malformed input):
+  // then a heading "inside" the fence is probably real. With all fences closed, a heading
+  // seen inside a fence is genuine code and must NOT be promoted to an anchor.
+  if (anchor === -1 && fenceChar !== "") anchor = firstHeadingAny;
 
   if (anchor === -1) {
     // Non-empty file with no version heading: preserve it, add the new block after it.

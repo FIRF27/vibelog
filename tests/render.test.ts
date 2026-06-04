@@ -68,6 +68,15 @@ describe("renderChangelog", () => {
     expect((bullet.match(/\]\(/g) || []).length).toBe(1); // exactly one link — no injected second link
   });
 
+  it("strips control and bidi-override chars from the summary", () => {
+    const md = renderChangelog(
+      { breaking: false, sections: [{ category: "Added", entries: [{ summary: "safe‮evil", refs: [] }] }] },
+      { version: "1.0.0", date: "2026-06-02" },
+    );
+    expect(md).not.toMatch(/[‮]/);
+    expect(md).toContain("- safeevil");
+  });
+
   it("drops an all-symbol ref id instead of emitting an empty [#]() link", () => {
     const md = renderChangelog(
       { breaking: false, sections: [{ category: "Added", entries: [{ summary: "X", refs: [{ type: "pr", id: "!!!" }] }] }] },
