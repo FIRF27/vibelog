@@ -25,6 +25,17 @@ describe("generateChangelog", () => {
     expect(md).toContain("- A thing");
   });
 
+  it("returns null when the model classifies everything as noise (no entries)", async () => {
+    const llm = async () => JSON.stringify({ sections: [{ category: "Added", entries: [] }] });
+    const md = await generateChangelog({
+      config: DEFAULT_CONFIG,
+      version: "1.0.0",
+      date: "2026-06-02",
+      deps: { runGit: okGit, llm },
+    });
+    expect(md).toBeNull();
+  });
+
   it("returns null when there are no changes in range", async () => {
     const emptyGit: GitRunner = (args) => (args[0] === "describe" ? "v1\n" : "");
     const md = await generateChangelog({

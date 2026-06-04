@@ -27,9 +27,11 @@ export function parsePrNumber(subject: string): number | undefined {
   // (Revert "Add x (#10)" (#20)) resolves to the real PR (#20), while still
   // catching "(#N)" followed by trailing punctuation/tags ("(#5).", "(#88) [skip ci]").
   const paren = [...subject.matchAll(/\(#(\d+)\)/g)];
-  if (paren.length) return Number(paren[paren.length - 1][1]);
-  const inline = subject.match(/(?:^|\s)#(\d+)\b/);
-  return inline ? Number(inline[1]) : undefined;
+  const raw = paren.length ? paren[paren.length - 1][1] : subject.match(/(?:^|\s)#(\d+)\b/)?.[1];
+  if (raw === undefined) return undefined;
+  const n = Number(raw);
+  // A >15-digit "PR number" isn't a real PR; reject rather than fetch/link a precision-lost value.
+  return Number.isSafeInteger(n) ? n : undefined;
 }
 
 export function resolveRange(
@@ -58,7 +60,10 @@ export function listCommits(from: string, to: string, runGit: GitRunner): Commit
   // An empty `from` means "all history up to `to`" (no tag baseline); this also includes
   // the root commit, which a `from..to` range would exclude.
   const range = from ? `${from}..${to}` : to;
-  const out = runGit(["log", range, "-z", `--format=${format}`]);
+  // "--end-of-options" makes git treat `range` strictly as a revision, never as a flag —
+  // so a from/to value beginning with "-" (e.g. "--output=/path") can't inject a git
+  // option (arbitrary file write) or silently produce a wrong/empty changelog.
+  const out = runGit(["log", "-z", `--format=${format}`, "--end-of-options", range]);
   return out
     .split("\0")
     .filter((r) => r.length > 0)

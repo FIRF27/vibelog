@@ -22,6 +22,9 @@ describe("parsePrNumber", () => {
   it("does not misattribute an inline issue ref when a real (#N) is present", () => {
     expect(parsePrNumber("feat: add export (#42), closes #40")).toBe(42);
   });
+  it("rejects a precision-unsafe >15-digit PR number", () => {
+    expect(parsePrNumber("feat: x (#99999999999999999999)")).toBeUndefined();
+  });
 });
 
 describe("resolveRange", () => {
@@ -66,15 +69,31 @@ describe("listCommits", () => {
     expect(commits[1].subject).toBe("Fix y");
   });
 
-  it("lists ALL history (no 'from..' prefix) when from is empty", () => {
-    let loggedRange = "";
+  it("lists ALL history (no 'from..' prefix) when from is empty, range after --end-of-options", () => {
+    let loggedArgs: string[] = [];
     const runGit: GitRunner = (args) => {
-      loggedRange = args[1];
+      loggedArgs = args;
       return ["sha1", "First commit", "Alice", ""].join("\x1f") + "\0";
     };
     const commits = listCommits("", "HEAD", runGit);
-    expect(loggedRange).toBe("HEAD"); // not "..HEAD"
+    const eoo = loggedArgs.indexOf("--end-of-options");
+    expect(eoo).toBeGreaterThan(-1); // sentinel present
+    expect(loggedArgs[eoo + 1]).toBe("HEAD"); // range immediately after it, not "..HEAD"
     expect(commits).toHaveLength(1);
+  });
+
+  it("passes a leading-dash ref as a revision (after --end-of-options), never as a git flag", () => {
+    let loggedArgs: string[] = [];
+    const runGit: GitRunner = (args) => {
+      loggedArgs = args;
+      return "";
+    };
+    listCommits("", "--output=/tmp/PWNED", runGit);
+    const eoo = loggedArgs.indexOf("--end-of-options");
+    expect(eoo).toBeGreaterThan(-1);
+    expect(loggedArgs[eoo + 1]).toBe("--output=/tmp/PWNED"); // sits after the sentinel = treated as a rev
+    // nothing dangerous precedes the sentinel
+    expect(loggedArgs.slice(0, eoo).some((a) => a.startsWith("--output"))).toBe(false);
   });
 
   it("keeps a multi-line body and one containing the field separator intact (no phantom commit)", () => {

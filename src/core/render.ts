@@ -32,10 +32,13 @@ function renderRef(ref: Ref, repoUrl?: string): string {
 
 export function renderChangelog(result: SummarizeResult, meta: RenderMeta): string {
   const lines: string[] = [];
+  // version comes from --version-name / the action input (often a tag/branch name): collapse
+  // whitespace, strip control/bidi chars, and drop "[]" so it can't forge a heading or break
+  // out of the "[version]" wrapper. repoUrl: strip chars that would break the markdown link.
+  const version = meta.version.replace(/\s+/g, " ").replace(UNSAFE_CHARS, "").replace(/[[\]]/g, "").trim();
+  const repoUrl = meta.repoUrl?.replace(/[\s()[\]]/g, "");
   const heading =
-    meta.version === "Unreleased" || !meta.date
-      ? `## [${meta.version}]`
-      : `## [${meta.version}] - ${meta.date}`;
+    version === "Unreleased" || !meta.date ? `## [${version}]` : `## [${version}] - ${meta.date}`;
   lines.push(heading, "");
 
   if (result.breaking) {
@@ -51,7 +54,7 @@ export function renderChangelog(result: SummarizeResult, meta: RenderMeta): stri
       // or list items), THEN strip remaining control + bidi chars (so e.g. U+202E can't
       // visually reorder the rendered changelog).
       const summary = entry.summary.replace(/\s+/g, " ").replace(UNSAFE_CHARS, "").trim();
-      const refs = entry.refs.map((r) => renderRef(r, meta.repoUrl)).filter(Boolean).join(", ");
+      const refs = entry.refs.map((r) => renderRef(r, repoUrl)).filter(Boolean).join(", ");
       lines.push(refs ? `- ${summary} (${refs})` : `- ${summary}`);
     }
     lines.push("");

@@ -68,6 +68,24 @@ describe("renderChangelog", () => {
     expect((bullet.match(/\]\(/g) || []).length).toBe(1); // exactly one link — no injected second link
   });
 
+  it("sanitizes a malicious version-name so it cannot forge headers", () => {
+    const md = renderChangelog(
+      { breaking: false, sections: [{ category: "Added", entries: [{ summary: "x", refs: [] }] }] },
+      { version: "1.0\n## [9.9.9]\n### Security", date: "2026-06-02" },
+    );
+    expect(md.match(/^## \[/gm)).toHaveLength(1); // only the real heading
+    expect(md).not.toMatch(/^### Security/m); // no forged section
+  });
+
+  it("sanitizes repoUrl so it cannot break out of the markdown link", () => {
+    const md = renderChangelog(
+      { breaking: false, sections: [{ category: "Added", entries: [{ summary: "x", refs: [{ type: "pr", id: "5" }] }] }] },
+      { version: "1.0.0", date: "2026-06-02", repoUrl: "https://h)](http://evil" },
+    );
+    const bullet = md.split("\n").find((l) => l.startsWith("- "))!;
+    expect((bullet.match(/\]\(/g) || []).length).toBe(1); // exactly one link — no breakout
+  });
+
   it("strips control and bidi-override chars from the summary", () => {
     const md = renderChangelog(
       { breaking: false, sections: [{ category: "Added", entries: [{ summary: "safe‮evil", refs: [] }] }] },

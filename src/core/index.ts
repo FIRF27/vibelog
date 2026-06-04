@@ -27,6 +27,9 @@ export async function generateChangelog(opts: {
   if (changeSet.entries.length === 0) return null;
 
   const result = await summarize(changeSet, opts.config, opts.deps.llm);
+  // The model may classify everything as noise (or return nothing). Treat "no user-facing
+  // entries" as no release rather than writing a meaningless heading-only version block.
+  if (result.sections.every((s) => s.entries.length === 0)) return null;
   return renderChangelog(result, {
     version: opts.version,
     date: opts.date,
