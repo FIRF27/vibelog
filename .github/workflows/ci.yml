@@ -34,8 +34,9 @@ jobs:
       - run: npm run build:action
       - name: Verify dist-action is in sync with source
         run: |
-          if ! git diff --quiet -- dist-action; then
-            echo "::error::dist-action/ is stale. Run 'npm run build:action' and commit the result."
-            git diff --stat -- dist-action
+          # porcelain catches modified AND newly untracked bundle files (git diff misses untracked).
+          if [ -n "$(git status --porcelain -- dist-action)" ]; then
+            echo "::error::dist-action/ is stale or has untracked output. Run 'npm run build:action' and commit the result."
+            git status --porcelain -- dist-action
             exit 1
           fi
