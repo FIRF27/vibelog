@@ -47,6 +47,13 @@ describe("buildMessages", () => {
     expect(user).toContain("Add dark mode");
   });
 
+  it("truncates an oversized commit subject (not just the body)", () => {
+    const entries = [{ commit: { sha: "s", subject: "x".repeat(5000), body: "", author: "a" } }];
+    const msgs = buildMessages(entries, { ...DEFAULT_CONFIG, maxBodyChars: 10 });
+    const user = msgs.find((m) => m.role === "user")!.content;
+    expect(user).not.toContain("x".repeat(11)); // subject capped at maxBodyChars
+  });
+
   it("truncates on code points, never emitting a lone surrogate", () => {
     // 4 emoji, limit 3 code points: code-unit slicing (the old bug) would cut mid-pair.
     const entries = [{ commit: { sha: "s", subject: "x", body: "🌙🌙🌙🌙", author: "a" } }];

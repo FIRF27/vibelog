@@ -10,9 +10,25 @@ export function prependChangelog(existing: string, block: string): string {
   if (!existing.includes("# Changelog")) {
     return HEADER + normalized + "\n";
   }
-  const idx = existing.indexOf("\n## ");
-  if (idx === -1) return existing.trimEnd() + "\n\n" + normalized;
-  const head = existing.slice(0, idx + 1);
-  const rest = existing.slice(idx + 1);
-  return head + "\n" + normalized + "\n" + rest;
+  // Find the first "## " heading that is NOT inside a fenced code block, so a "## "
+  // line in an intro example (```...```) can't become a bogus insertion anchor.
+  const lines = existing.split("\n");
+  let inFence = false;
+  let anchor = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trimStart();
+    if (trimmed.startsWith("```") || trimmed.startsWith("~~~")) {
+      inFence = !inFence;
+      continue;
+    }
+    if (!inFence && lines[i].startsWith("## ")) {
+      anchor = i;
+      break;
+    }
+  }
+  if (anchor === -1) return existing.trimEnd() + "\n\n" + normalized;
+  // trimEnd()/single "\n\n" joins keep repeated prepends from accumulating blank lines.
+  const head = lines.slice(0, anchor).join("\n").trimEnd();
+  const rest = lines.slice(anchor).join("\n");
+  return head + "\n\n" + normalized + "\n" + rest;
 }

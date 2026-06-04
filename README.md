@@ -86,6 +86,10 @@ npx vibelog --model llama3.1 --version-name v1.2.0
 
 Precedence: **CLI flags > environment variables > config file > built-in defaults.**
 
+> `ignorePatterns` are trusted, maintainer-supplied regexes run against commit subjects.
+> Keep them simple and anchored (like the defaults); avoid nested quantifiers such as
+> `(a+)+`, which can backtrack catastrophically on crafted commit subjects.
+
 ## GitHub Action
 
 ```yaml

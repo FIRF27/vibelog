@@ -3,14 +3,24 @@ import type { Commit, GitRunner } from "./types.js";
 
 const FIELD = "\x1f";
 
-export const realGitRunner: GitRunner = (args) =>
-  execFileSync("git", args, {
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-    // Capture stderr instead of inheriting it, so git's own error text
-    // (e.g. "No such remote 'origin'") doesn't leak to our output on a caught failure.
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+export const realGitRunner: GitRunner = (args) => {
+  try {
+    return execFileSync("git", args, {
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+      // Capture stderr instead of inheriting it, so git's own error text
+      // (e.g. "No such remote 'origin'") doesn't leak to our output on a caught failure.
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOBUFS") {
+      throw new Error(
+        "git output exceeded the 64MB buffer — the commit range is too large. Narrow it with --from/--to.",
+      );
+    }
+    throw err;
+  }
+};
 
 export function parsePrNumber(subject: string): number | undefined {
   // Prefer the LAST parenthesized "(#N)": a revert's quoted inner number

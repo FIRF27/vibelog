@@ -64,8 +64,20 @@ describe("SummarizeResultSchema", () => {
     expect(parsed.sections[0].entries[0].refs).toEqual([]);
   });
 
-  it("coerces a stringified breaking flag", () => {
+  it("coerces assorted truthy/falsy breaking forms; unknown still throws for retry", () => {
     expect(SummarizeResultSchema.parse({ breaking: "true", sections: [] }).breaking).toBe(true);
+    expect(SummarizeResultSchema.parse({ breaking: 1, sections: [] }).breaking).toBe(true);
+    expect(SummarizeResultSchema.parse({ breaking: "True", sections: [] }).breaking).toBe(true);
+    expect(SummarizeResultSchema.parse({ breaking: "yes", sections: [] }).breaking).toBe(true);
+    expect(SummarizeResultSchema.parse({ breaking: 0, sections: [] }).breaking).toBe(false);
+    expect(() => SummarizeResultSchema.parse({ breaking: "maybe", sections: [] })).toThrow();
+  });
+
+  it("drops a non-finite numeric ref id (1e999 -> Infinity)", () => {
+    const parsed = SummarizeResultSchema.parse({
+      sections: [{ category: "Added", entries: [{ summary: "X", refs: [{ type: "pr", id: 1e999 }, { type: "pr", id: 7 }] }] }],
+    });
+    expect(parsed.sections[0].entries[0].refs).toEqual([{ type: "pr", id: "7" }]);
   });
 
   it("degrades a section with a missing entries key to an empty section", () => {

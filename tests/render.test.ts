@@ -42,4 +42,29 @@ describe("renderChangelog", () => {
     );
     expect(md).toContain("- X (#9)");
   });
+
+  it("collapses summary newlines so it cannot forge a fake version/section header", () => {
+    const md = renderChangelog(
+      {
+        breaking: false,
+        sections: [
+          { category: "Added", entries: [{ summary: "real\n\n## [9.9.9] - 2099-01-01\n\n### Security\n- backdoor", refs: [] }] },
+        ],
+      },
+      { version: "1.0.0", date: "2026-06-02" },
+    );
+    expect(md.match(/^## \[/gm)).toHaveLength(1); // only the real version heading
+    expect(md).not.toMatch(/^### Security/m); // no forged section
+    expect(md).toContain("- real ## [9.9.9] - 2099-01-01 ### Security - backdoor");
+  });
+
+  it("strips a ref id that tries to break out of the markdown link", () => {
+    const md = renderChangelog(
+      { breaking: false, sections: [{ category: "Added", entries: [{ summary: "X", refs: [{ type: "pr", id: "1](http://evil)" }] }] }] },
+      { version: "1.0.0", date: "2026-06-02", repoUrl: "https://github.com/o/r" },
+    );
+    expect(md).not.toContain("http://evil"); // the injected URL is neutralized
+    const bullet = md.split("\n").find((l) => l.startsWith("- "))!;
+    expect((bullet.match(/\]\(/g) || []).length).toBe(1); // exactly one link — no injected second link
+  });
 });

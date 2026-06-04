@@ -6,12 +6,19 @@ export interface RenderMeta {
   repoUrl?: string;
 }
 
+// Ref ids are PR numbers (digits) or commit shas (hex). Strip anything else so a
+// crafted id like "1](http://evil)" can't break out of the markdown link.
+function safeId(id: string): string {
+  return id.replace(/[^\w.-]/g, "");
+}
+
 function renderRef(ref: Ref, repoUrl?: string): string {
+  const id = safeId(ref.id);
   if (ref.type === "pr") {
-    return repoUrl ? `[#${ref.id}](${repoUrl}/pull/${ref.id})` : `#${ref.id}`;
+    return repoUrl ? `[#${id}](${repoUrl}/pull/${id})` : `#${id}`;
   }
-  const short = ref.id.slice(0, 7);
-  return repoUrl ? `[\`${short}\`](${repoUrl}/commit/${ref.id})` : `\`${short}\``;
+  const short = id.slice(0, 7);
+  return repoUrl ? `[\`${short}\`](${repoUrl}/commit/${id})` : `\`${short}\``;
 }
 
 export function renderChangelog(result: SummarizeResult, meta: RenderMeta): string {
@@ -31,8 +38,11 @@ export function renderChangelog(result: SummarizeResult, meta: RenderMeta): stri
     if (!section || section.entries.length === 0) continue;
     lines.push(`### ${category}`, "");
     for (const entry of section.entries) {
+      // Collapse newlines/whitespace so an LLM summary can't forge new "## "/"### "
+      // headers or list items inside the changelog (and stays a single clean bullet).
+      const summary = entry.summary.replace(/\s+/g, " ").trim();
       const refs = entry.refs.map((r) => renderRef(r, meta.repoUrl)).join(", ");
-      lines.push(refs ? `- ${entry.summary} (${refs})` : `- ${entry.summary}`);
+      lines.push(refs ? `- ${summary} (${refs})` : `- ${summary}`);
     }
     lines.push("");
   }

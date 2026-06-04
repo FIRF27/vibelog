@@ -29,8 +29,13 @@ export const EntrySchema = z.object({
         if (r === null || typeof r !== "object") return false;
         const { type, id } = r as { type?: unknown; id?: unknown };
         const idOk =
-          (typeof id === "string" || typeof id === "number" || typeof id === "bigint") &&
-          String(id).length > 0;
+          typeof id === "string"
+            ? id.length > 0
+            : typeof id === "bigint"
+              ? true
+              : typeof id === "number"
+                ? Number.isFinite(id) // reject 1e999 -> Infinity (would render an "Infinity" link)
+                : false;
         return (type === "pr" || type === "commit") && idOk;
       });
     }, z.array(RefSchema))
@@ -60,9 +65,16 @@ export const SectionSchema = z.object({
 export type Section = z.infer<typeof SectionSchema>;
 
 export const SummarizeResultSchema = z.object({
-  // Coerce a stringified boolean ("true"/"false") the model may emit; default when absent.
+  // Coerce common truthy/falsy forms the model may emit ("true"/"True"/1/"1"/"yes" etc.)
+  // so a stray scalar for this single field doesn't reject an otherwise-valid batch;
+  // genuinely unknown values still throw so the retry can self-correct. Default when absent.
   breaking: z
-    .preprocess((v) => (v === "true" ? true : v === "false" ? false : v), z.boolean())
+    .preprocess((v) => {
+      const s = typeof v === "string" ? v.trim().toLowerCase() : v;
+      if (s === true || s === "true" || s === 1 || s === "1" || s === "yes") return true;
+      if (s === false || s === "false" || s === 0 || s === "0" || s === "no") return false;
+      return v;
+    }, z.boolean())
     .default(false),
   // Tolerate out-of-set categories the model sometimes invents (e.g. "Performance"):
   // drop those sections instead of failing the whole batch/run. The trailing
