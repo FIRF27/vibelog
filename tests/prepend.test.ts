@@ -32,4 +32,32 @@ describe("prependChangelog", () => {
     expect(doc).not.toMatch(/\n{3,}/); // never three consecutive newlines
     expect(doc.indexOf("## [1.2.0]")).toBeLessThan(doc.indexOf("## [1.1.0]"));
   });
+
+  it("preserves an existing file that is not titled exactly '# Changelog' (no data loss)", () => {
+    const existing = "# Release Notes\n\n## [1.2.0] - 2026-01-01\n\n### Added\n- prior real notes\n";
+    const out = prependChangelog(existing, "## [1.3.0]\n\n### Added\n- new\n");
+    expect(out).toContain("prior real notes"); // old content NOT wiped
+    expect(out).toContain("# Release Notes"); // keeps its own title (no forced "# Changelog")
+    expect(out.indexOf("## [1.3.0]")).toBeLessThan(out.indexOf("## [1.2.0]"));
+  });
+
+  it("preserves non-empty content with no version heading at all", () => {
+    const out = prependChangelog("# 更新日志\n\nsome prose\n", "## [1.0.0]\n\n- x\n");
+    expect(out).toContain("some prose");
+    expect(out).toContain("## [1.0.0]");
+  });
+
+  it("prepends (not appends) even when an unclosed code fence is in the intro", () => {
+    const existing = "# Changelog\n\n```\nunclosed fence ## oops\n\n## [1.0.0]\n\n- old\n";
+    const out = prependChangelog(existing, "## [2.0.0]\n\n- new\n");
+    expect(out.indexOf("## [2.0.0]")).toBeLessThan(out.indexOf("## [1.0.0]")); // newest on top
+    expect(out).toContain("- old");
+  });
+
+  it("normalizes CRLF so output is not mixed line endings", () => {
+    const existing = "# Changelog\r\n\r\n## [1.0.0]\r\n\r\n- old\r\n";
+    const out = prependChangelog(existing, "## [1.1.0]\n\n- new\n");
+    expect(out).not.toContain("\r");
+    expect(out.indexOf("## [1.1.0]")).toBeLessThan(out.indexOf("## [1.0.0]"));
+  });
 });

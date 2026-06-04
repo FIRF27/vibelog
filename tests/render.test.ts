@@ -67,4 +67,14 @@ describe("renderChangelog", () => {
     const bullet = md.split("\n").find((l) => l.startsWith("- "))!;
     expect((bullet.match(/\]\(/g) || []).length).toBe(1); // exactly one link — no injected second link
   });
+
+  it("drops an all-symbol ref id instead of emitting an empty [#]() link", () => {
+    const md = renderChangelog(
+      { breaking: false, sections: [{ category: "Added", entries: [{ summary: "X", refs: [{ type: "pr", id: "!!!" }] }] }] },
+      { version: "1.0.0", date: "2026-06-02", repoUrl: "https://github.com/o/r" },
+    );
+    expect(md).not.toContain("[#]");
+    expect(md).not.toContain("]()");
+    expect(md).toContain("- X"); // entry still rendered, just without the bogus ref
+  });
 });

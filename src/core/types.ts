@@ -32,9 +32,11 @@ export const EntrySchema = z.object({
           typeof id === "string"
             ? id.length > 0
             : typeof id === "bigint"
-              ? true
+              ? id >= 0n
               : typeof id === "number"
-                ? Number.isFinite(id) // reject 1e999 -> Infinity (would render an "Infinity" link)
+                ? // safe non-negative integer only: rejects Infinity/NaN and scientific
+                  // forms like 1e21 that would coerce to a malformed "1e+21" link
+                  Number.isSafeInteger(id) && id >= 0
                 : false;
         return (type === "pr" || type === "commit") && idOk;
       });

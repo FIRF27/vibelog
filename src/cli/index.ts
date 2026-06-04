@@ -51,7 +51,7 @@ async function main(): Promise<void> {
   program
     .name("vibelog")
     .description("Turn messy git history into clean release notes with AI.")
-    .option("--from <ref>", "start ref (default: last tag)")
+    .option("--from <ref>", "start ref, exclusive like git (default: last tag, or all history if untagged)")
     .option("--to <ref>", "end ref (default: HEAD)")
     .option("--version-name <name>", "version heading (default: Unreleased)", "Unreleased")
     .option("--model <model>")

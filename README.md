@@ -54,7 +54,7 @@ npx vibelog --model llama3.1 --version-name v1.2.0
 
 | Flag | Description | Default |
 |---|---|---|
-| `--from <ref>` | Start ref | last git tag |
+| `--from <ref>` | Start ref, exclusive (like git) | last tag, or all history if the repo has no tags |
 | `--to <ref>` | End ref | `HEAD` |
 | `--version-name <name>` | Version heading text | `Unreleased` |
 | `--model <model>` | LLM model id | `gpt-4.1-mini` |
@@ -112,6 +112,11 @@ jobs:
 
 The `changelog` output is the generated markdown — feed it to a GitHub Release, a PR
 comment, or set `write: "true"` to prepend it into `CHANGELOG.md`.
+
+> **`write: "true"` only edits the file in the workspace — it does not commit or push.**
+> To persist it, give the job `permissions: { contents: write }` and add your own commit
+> step (e.g. `stefanzweifel/git-auto-commit-action`, or `git commit`/`git push`), or open
+> a PR. This keeps vibelog out of your release/commit policy by design.
 
 ## What it does *not* do
 

@@ -25,7 +25,10 @@ async function run(): Promise<void> {
     const config = mergeConfig({ defaults: DEFAULT_CONFIG, env: configFromEnv(process.env), flags });
 
     const { owner, repo } = context.repo;
-    config.repoUrl ??= `https://github.com/${owner}/${repo}`;
+    // serverUrl is the GitHub host (github.com or a GitHub Enterprise Server host), so
+    // PR/commit links are correct on GHE too.
+    const serverUrl = context.serverUrl || "https://github.com";
+    config.repoUrl ??= `${serverUrl}/${owner}/${repo}`;
 
     let fetchPRs: ((numbers: number[]) => Promise<Map<number, PullRequest>>) | undefined;
     if (token) {

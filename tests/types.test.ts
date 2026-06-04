@@ -80,6 +80,13 @@ describe("SummarizeResultSchema", () => {
     expect(parsed.sections[0].entries[0].refs).toEqual([{ type: "pr", id: "7" }]);
   });
 
+  it("drops a numeric ref id beyond safe-integer range (1e21 -> '1e+21')", () => {
+    const parsed = SummarizeResultSchema.parse({
+      sections: [{ category: "Added", entries: [{ summary: "X", refs: [{ type: "pr", id: 1e21 }, { type: "pr", id: 7 }] }] }],
+    });
+    expect(parsed.sections[0].entries[0].refs).toEqual([{ type: "pr", id: "7" }]);
+  });
+
   it("degrades a section with a missing entries key to an empty section", () => {
     const parsed = SummarizeResultSchema.parse({ sections: [{ category: "Added" }] });
     expect(parsed.sections[0].entries).toEqual([]);

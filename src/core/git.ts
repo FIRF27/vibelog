@@ -36,7 +36,16 @@ export function resolveRange(
   opts: { from?: string; to?: string },
   runGit: GitRunner,
 ): { from: string; to: string } {
-  const from = opts.from ?? runGit(["describe", "--tags", "--abbrev=0"]).trim();
+  let from = opts.from;
+  if (from === undefined) {
+    // Default to the last tag; but a repo with NO tags (the common first-changelog case)
+    // should generate over ALL history rather than dying on `git describe`. "" = all history.
+    try {
+      from = runGit(["describe", "--tags", "--abbrev=0"]).trim();
+    } catch {
+      from = "";
+    }
+  }
   const to = opts.to ?? "HEAD";
   return { from, to };
 }
@@ -46,7 +55,10 @@ export function listCommits(from: string, to: string, runGit: GitRunner): Commit
   // the free-form body LAST, so a FIELD separator embedded in the body can't spawn a
   // phantom commit — it's reassembled via parts.slice(3).join(FIELD).
   const format = ["%H", "%s", "%an", "%b"].join(FIELD);
-  const out = runGit(["log", `${from}..${to}`, "-z", `--format=${format}`]);
+  // An empty `from` means "all history up to `to`" (no tag baseline); this also includes
+  // the root commit, which a `from..to` range would exclude.
+  const range = from ? `${from}..${to}` : to;
+  const out = runGit(["log", range, "-z", `--format=${format}`]);
   return out
     .split("\0")
     .filter((r) => r.length > 0)

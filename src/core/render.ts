@@ -14,6 +14,7 @@ function safeId(id: string): string {
 
 function renderRef(ref: Ref, repoUrl?: string): string {
   const id = safeId(ref.id);
+  if (id === "") return ""; // an id that was all symbols -> drop rather than emit "[#]()"
   if (ref.type === "pr") {
     return repoUrl ? `[#${id}](${repoUrl}/pull/${id})` : `#${id}`;
   }
@@ -41,7 +42,7 @@ export function renderChangelog(result: SummarizeResult, meta: RenderMeta): stri
       // Collapse newlines/whitespace so an LLM summary can't forge new "## "/"### "
       // headers or list items inside the changelog (and stays a single clean bullet).
       const summary = entry.summary.replace(/\s+/g, " ").trim();
-      const refs = entry.refs.map((r) => renderRef(r, meta.repoUrl)).join(", ");
+      const refs = entry.refs.map((r) => renderRef(r, meta.repoUrl)).filter(Boolean).join(", ");
       lines.push(refs ? `- ${summary} (${refs})` : `- ${summary}`);
     }
     lines.push("");

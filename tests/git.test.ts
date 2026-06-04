@@ -34,12 +34,20 @@ describe("resolveRange", () => {
     expect(resolveRange({ from: "a", to: "b" }, runGit)).toEqual({ from: "a", to: "b" });
   });
 
-  it("surfaces a hard git failure (e.g. no tags) instead of swallowing it", () => {
+  it("falls back to all history (from='') when there are no tags", () => {
     const runGit: GitRunner = (args) => {
       if (args[0] === "describe") throw new Error("fatal: No names found, cannot describe anything.");
       return "";
     };
-    expect(() => resolveRange({}, runGit)).toThrow(/No names found/);
+    expect(resolveRange({}, runGit)).toEqual({ from: "", to: "HEAD" });
+  });
+
+  it("still surfaces a hard git failure when an explicit from is given", () => {
+    const runGit: GitRunner = (args) => {
+      if (args[0] === "log") throw new Error("fatal: bad revision 'nope..HEAD'");
+      return "";
+    };
+    expect(() => listCommits("nope", "HEAD", runGit)).toThrow(/bad revision/);
   });
 });
 
@@ -56,6 +64,17 @@ describe("listCommits", () => {
     expect(commits).toHaveLength(2);
     expect(commits[0]).toEqual({ sha: "sha1", subject: "Add x (#1)", body: "body one", author: "Alice" });
     expect(commits[1].subject).toBe("Fix y");
+  });
+
+  it("lists ALL history (no 'from..' prefix) when from is empty", () => {
+    let loggedRange = "";
+    const runGit: GitRunner = (args) => {
+      loggedRange = args[1];
+      return ["sha1", "First commit", "Alice", ""].join("\x1f") + "\0";
+    };
+    const commits = listCommits("", "HEAD", runGit);
+    expect(loggedRange).toBe("HEAD"); // not "..HEAD"
+    expect(commits).toHaveLength(1);
   });
 
   it("keeps a multi-line body and one containing the field separator intact (no phantom commit)", () => {
