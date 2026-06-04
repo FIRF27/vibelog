@@ -38,6 +38,41 @@ describe("SummarizeResultSchema", () => {
     expect(parsed.sections[0].entries.map((e) => e.summary)).toEqual(["real"]);
   });
 
+  it("drops a malformed ref (missing id / bad type) instead of aborting the batch", () => {
+    const parsed = SummarizeResultSchema.parse({
+      sections: [
+        {
+          category: "Added",
+          entries: [{ summary: "X", refs: [{ type: "pr" }, { type: "issue", id: "9" }, { type: "pr", id: 7 }] }],
+        },
+      ],
+    });
+    expect(parsed.sections[0].entries[0].refs).toEqual([{ type: "pr", id: "7" }]);
+  });
+
+  it("accepts a single ref object as a one-element list", () => {
+    const parsed = SummarizeResultSchema.parse({
+      sections: [{ category: "Added", entries: [{ summary: "X", refs: { type: "pr", id: 5 } }] }],
+    });
+    expect(parsed.sections[0].entries[0].refs).toEqual([{ type: "pr", id: "5" }]);
+  });
+
+  it("drops a ref whose id is a non-scalar (no more [object Object]/null links)", () => {
+    const parsed = SummarizeResultSchema.parse({
+      sections: [{ category: "Added", entries: [{ summary: "X", refs: [{ type: "pr", id: { n: 1 } }, { type: "commit", id: null }] }] }],
+    });
+    expect(parsed.sections[0].entries[0].refs).toEqual([]);
+  });
+
+  it("coerces a stringified breaking flag", () => {
+    expect(SummarizeResultSchema.parse({ breaking: "true", sections: [] }).breaking).toBe(true);
+  });
+
+  it("degrades a section with a missing entries key to an empty section", () => {
+    const parsed = SummarizeResultSchema.parse({ sections: [{ category: "Added" }] });
+    expect(parsed.sections[0].entries).toEqual([]);
+  });
+
   it("ships sane defaults", () => {
     expect(DEFAULT_CONFIG.model).toBe("gpt-4.1-mini");
     expect(DEFAULT_CONFIG.batchSize).toBe(100);

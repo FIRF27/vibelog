@@ -57,7 +57,6 @@ async function main(): Promise<void> {
     .option("--model <model>")
     .option("--base-url <url>")
     .option("--repo-url <url>")
-    .option("--include-authors")
     .option("--config <file>")
     .option("--write", "prepend into CHANGELOG.md instead of printing")
     .option("--output <file>", "file to write when --write is set", "CHANGELOG.md")
@@ -68,7 +67,6 @@ async function main(): Promise<void> {
     model: opts.model,
     baseUrl: opts.baseUrl,
     repoUrl: opts.repoUrl,
-    includeAuthors: opts.includeAuthors ? true : undefined,
   };
   const config = mergeConfig({
     defaults: DEFAULT_CONFIG,

@@ -4,7 +4,6 @@ export interface RenderMeta {
   version: string;
   date?: string;
   repoUrl?: string;
-  includeAuthors?: boolean;
 }
 
 function renderRef(ref: Ref, repoUrl?: string): string {

@@ -19,7 +19,22 @@ export type Ref = z.infer<typeof RefSchema>;
 
 export const EntrySchema = z.object({
   summary: z.string().min(1),
-  refs: z.array(RefSchema).default([]),
+  // Tolerate malformed refs: accept a single ref object as a one-element list, and drop
+  // refs with a bad type or a missing/non-scalar id — otherwise a junk id either aborts
+  // the batch or renders a broken "[object Object]"/"null" link.
+  refs: z
+    .preprocess((v) => {
+      const arr = Array.isArray(v) ? v : v && typeof v === "object" ? [v] : [];
+      return arr.filter((r) => {
+        if (r === null || typeof r !== "object") return false;
+        const { type, id } = r as { type?: unknown; id?: unknown };
+        const idOk =
+          (typeof id === "string" || typeof id === "number" || typeof id === "bigint") &&
+          String(id).length > 0;
+        return (type === "pr" || type === "commit") && idOk;
+      });
+    }, z.array(RefSchema))
+    .default([]),
 });
 export type Entry = z.infer<typeof EntrySchema>;
 
@@ -37,14 +52,18 @@ export const SectionSchema = z.object({
               typeof (e as { summary?: unknown }).summary === "string" &&
               (e as { summary: string }).summary.trim().length > 0,
           )
-        : v,
+        : // a missing/non-array entries key degrades to an empty (render-skipped) section
+          [],
     z.array(EntrySchema),
   ),
 });
 export type Section = z.infer<typeof SectionSchema>;
 
 export const SummarizeResultSchema = z.object({
-  breaking: z.boolean().default(false),
+  // Coerce a stringified boolean ("true"/"false") the model may emit; default when absent.
+  breaking: z
+    .preprocess((v) => (v === "true" ? true : v === "false" ? false : v), z.boolean())
+    .default(false),
   // Tolerate out-of-set categories the model sometimes invents (e.g. "Performance"):
   // drop those sections instead of failing the whole batch/run. The trailing
   // .default([]) makes a null-content "{}" response degrade to a no-op rather than
@@ -100,7 +119,6 @@ export interface Config {
   baseUrl?: string;
   repoUrl?: string;
   ignorePatterns: string[];
-  includeAuthors: boolean;
   batchSize: number;
   maxBodyChars: number;
   maxBatchChars: number;
@@ -109,7 +127,6 @@ export interface Config {
 export const DEFAULT_CONFIG: Config = {
   model: "gpt-4.1-mini",
   ignorePatterns: ["^Merge ", "^chore", "^ci", "^build", "^style", "^docs"],
-  includeAuthors: false,
   batchSize: 100,
   maxBodyChars: 2000,
   maxBatchChars: 60000,
@@ -122,7 +139,6 @@ export const PartialConfigSchema = z.strictObject({
   baseUrl: z.string().optional(),
   repoUrl: z.string().optional(),
   ignorePatterns: z.array(z.string()).optional(),
-  includeAuthors: z.boolean().optional(),
   batchSize: z.number().int().positive().optional(),
   maxBodyChars: z.number().int().positive().optional(),
   maxBatchChars: z.number().int().positive().optional(),

@@ -31,6 +31,5 @@ export async function generateChangelog(opts: {
     version: opts.version,
     date: opts.date,
     repoUrl: opts.config.repoUrl,
-    includeAuthors: opts.config.includeAuthors,
   });
 }

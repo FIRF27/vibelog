@@ -11,13 +11,13 @@ export declare const RefSchema: z.ZodObject<{
 export type Ref = z.infer<typeof RefSchema>;
 export declare const EntrySchema: z.ZodObject<{
     summary: z.ZodString;
-    refs: z.ZodDefault<z.ZodArray<z.ZodObject<{
+    refs: z.ZodDefault<z.ZodPreprocess<z.ZodArray<z.ZodObject<{
         type: z.ZodEnum<{
             pr: "pr";
             commit: "commit";
         }>;
         id: z.ZodCoercedString<unknown>;
-    }, z.core.$strip>>>;
+    }, z.core.$strip>>>>;
 }, z.core.$strip>;
 export type Entry = z.infer<typeof EntrySchema>;
 export declare const SectionSchema: z.ZodObject<{
@@ -31,18 +31,18 @@ export declare const SectionSchema: z.ZodObject<{
     }>;
     entries: z.ZodPreprocess<z.ZodArray<z.ZodObject<{
         summary: z.ZodString;
-        refs: z.ZodDefault<z.ZodArray<z.ZodObject<{
+        refs: z.ZodDefault<z.ZodPreprocess<z.ZodArray<z.ZodObject<{
             type: z.ZodEnum<{
                 pr: "pr";
                 commit: "commit";
             }>;
             id: z.ZodCoercedString<unknown>;
-        }, z.core.$strip>>>;
+        }, z.core.$strip>>>>;
     }, z.core.$strip>>>;
 }, z.core.$strip>;
 export type Section = z.infer<typeof SectionSchema>;
 export declare const SummarizeResultSchema: z.ZodObject<{
-    breaking: z.ZodDefault<z.ZodBoolean>;
+    breaking: z.ZodDefault<z.ZodPreprocess<z.ZodBoolean>>;
     sections: z.ZodDefault<z.ZodPreprocess<z.ZodArray<z.ZodObject<{
         category: z.ZodEnum<{
             Added: "Added";
@@ -54,13 +54,13 @@ export declare const SummarizeResultSchema: z.ZodObject<{
         }>;
         entries: z.ZodPreprocess<z.ZodArray<z.ZodObject<{
             summary: z.ZodString;
-            refs: z.ZodDefault<z.ZodArray<z.ZodObject<{
+            refs: z.ZodDefault<z.ZodPreprocess<z.ZodArray<z.ZodObject<{
                 type: z.ZodEnum<{
                     pr: "pr";
                     commit: "commit";
                 }>;
                 id: z.ZodCoercedString<unknown>;
-            }, z.core.$strip>>>;
+            }, z.core.$strip>>>>;
         }, z.core.$strip>>>;
     }, z.core.$strip>>>>;
 }, z.core.$strip>;
@@ -92,7 +92,6 @@ export interface Config {
     baseUrl?: string;
     repoUrl?: string;
     ignorePatterns: string[];
-    includeAuthors: boolean;
     batchSize: number;
     maxBodyChars: number;
     maxBatchChars: number;
@@ -103,7 +102,6 @@ export declare const PartialConfigSchema: z.ZodObject<{
     baseUrl: z.ZodOptional<z.ZodString>;
     repoUrl: z.ZodOptional<z.ZodString>;
     ignorePatterns: z.ZodOptional<z.ZodArray<z.ZodString>>;
-    includeAuthors: z.ZodOptional<z.ZodBoolean>;
     batchSize: z.ZodOptional<z.ZodNumber>;
     maxBodyChars: z.ZodOptional<z.ZodNumber>;
     maxBatchChars: z.ZodOptional<z.ZodNumber>;

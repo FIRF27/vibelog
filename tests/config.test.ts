@@ -4,11 +4,10 @@ import { DEFAULT_CONFIG } from "../src/core/types.js";
 
 describe("config", () => {
   it("reads env vars", () => {
-    const env = { VIBELOG_MODEL: "gpt-4o", OPENAI_BASE_URL: "http://x", VIBELOG_INCLUDE_AUTHORS: "true" };
+    const env = { VIBELOG_MODEL: "gpt-4o", OPENAI_BASE_URL: "http://x" };
     const c = configFromEnv(env);
     expect(c.model).toBe("gpt-4o");
     expect(c.baseUrl).toBe("http://x");
-    expect(c.includeAuthors).toBe(true);
   });
 
   it("applies precedence flags > env > file > defaults", () => {

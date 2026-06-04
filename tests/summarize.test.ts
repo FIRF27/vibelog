@@ -1,13 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { chunk, mergeResults, buildMessages, batchEntries, summarize } from "../src/core/summarize.js";
+import { mergeResults, buildMessages, batchEntries, summarize } from "../src/core/summarize.js";
 import { DEFAULT_CONFIG } from "../src/core/types.js";
 import type { ChangeSet, SummarizeResult } from "../src/core/types.js";
-
-describe("chunk", () => {
-  it("splits into fixed-size groups", () => {
-    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
-  });
-});
 
 describe("mergeResults", () => {
   it("merges sections by category and ORs breaking", () => {

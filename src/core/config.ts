@@ -17,9 +17,6 @@ export function configFromEnv(env: Env): Partial<Config> {
     model: env.VIBELOG_MODEL,
     baseUrl: env.OPENAI_BASE_URL ?? env.VIBELOG_BASE_URL,
     repoUrl: env.VIBELOG_REPO_URL,
-    includeAuthors: env.VIBELOG_INCLUDE_AUTHORS
-      ? env.VIBELOG_INCLUDE_AUTHORS === "true"
-      : undefined,
   });
 }
 
