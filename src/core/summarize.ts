@@ -9,6 +9,7 @@ import {
   type Section,
   type SummarizeResult,
 } from "./types.js";
+import { parsePrNumber } from "./git.js";
 
 export function mergeResults(results: SummarizeResult[]): SummarizeResult {
   const byCategory = new Map<string, Section>();
@@ -135,9 +136,53 @@ async function summarizeBatch(entries: ChangeEntry[], config: Config, llm: Llm):
   throw new Error("unreachable");
 }
 
+// The model echoes commit shas / PR numbers into refs, but can corrupt them (e.g. a typo'd
+// sha -> a broken commit link). Ground every ref against the facts vibelog already knows
+// from the changeset: keep a commit ref only if its id matches a real sha (canonicalized,
+// with a near-miss correction for a single typo'd char), and a pr ref only if its number
+// really appears in the range. Anything else is dropped — a missing link beats a broken one.
+export function groundRefs(result: SummarizeResult, changeSet: ChangeSet): SummarizeResult {
+  const shas = changeSet.entries.map((e) => e.commit.sha.toLowerCase());
+  const prNumbers = new Set<string>();
+  for (const e of changeSet.entries) {
+    if (e.pr) prNumbers.add(String(e.pr.number));
+    const n = parsePrNumber(e.commit.subject);
+    if (n !== undefined) prNumbers.add(String(n));
+  }
+  const canonicalCommit = (id: string): string | undefined => {
+    const hex = id.toLowerCase().replace(/[^0-9a-f]/g, "");
+    if (hex.length < 4) return undefined;
+    let match = shas.filter((s) => s.startsWith(hex));
+    if (match.length === 1) return match[0].slice(0, 7);
+    // tolerate a single corrupted trailing char by matching on a shorter unique prefix
+    for (let len = hex.length - 1; len >= 6 && len < hex.length; len--) {
+      match = shas.filter((s) => s.startsWith(hex.slice(0, len)));
+      if (match.length === 1) return match[0].slice(0, 7);
+      if (match.length === 0) break;
+    }
+    return undefined;
+  };
+  return {
+    breaking: result.breaking,
+    sections: result.sections.map((sec) => ({
+      category: sec.category,
+      entries: sec.entries.map((en) => ({
+        summary: en.summary,
+        refs: en.refs.flatMap((r) => {
+          if (r.type === "commit") {
+            const id = canonicalCommit(r.id);
+            return id ? [{ type: "commit" as const, id }] : [];
+          }
+          return prNumbers.has(r.id) ? [r] : [];
+        }),
+      })),
+    })),
+  };
+}
+
 export async function summarize(changeSet: ChangeSet, config: Config, llm: Llm): Promise<SummarizeResult> {
   const batches = batchEntries(changeSet.entries, config);
   const results: SummarizeResult[] = [];
   for (const batch of batches) results.push(await summarizeBatch(batch, config, llm));
-  return mergeResults(results);
+  return groundRefs(mergeResults(results), changeSet);
 }

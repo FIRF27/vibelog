@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mergeResults, buildMessages, batchEntries, summarize } from "../src/core/summarize.js";
+import { mergeResults, buildMessages, batchEntries, summarize, groundRefs } from "../src/core/summarize.js";
 import { DEFAULT_CONFIG } from "../src/core/types.js";
 import type { ChangeSet, SummarizeResult } from "../src/core/types.js";
 
@@ -72,6 +72,36 @@ describe("buildMessages", () => {
     expect(user).not.toContain("�"); // no U+FFFD
     // No LONE surrogate (valid surrogate pairs are fine).
     expect(user).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
+  });
+});
+
+describe("groundRefs", () => {
+  const cs: ChangeSet = {
+    from: "v1",
+    to: "HEAD",
+    entries: [
+      { commit: { sha: "28f0d3affff1111", subject: "feat: x", body: "", author: "a" } },
+      { commit: { sha: "abc1234def5678", subject: "fix: y (#7)", body: "", author: "b" } },
+    ],
+  };
+  const wrap = (refs: { type: "pr" | "commit"; id: string }[]): SummarizeResult => ({
+    breaking: false,
+    sections: [{ category: "Added", entries: [{ summary: "x", refs }] }],
+  });
+  const refsOf = (r: SummarizeResult) => r.sections[0].entries[0].refs;
+
+  it("corrects a near-miss (single typo'd char) commit sha to the real one", () => {
+    expect(refsOf(groundRefs(wrap([{ type: "commit", id: "28f0d3c" }]), cs))).toEqual([
+      { type: "commit", id: "28f0d3a" },
+    ]);
+  });
+  it("drops a commit ref that matches no real sha", () => {
+    expect(refsOf(groundRefs(wrap([{ type: "commit", id: "9999999" }]), cs))).toEqual([]);
+  });
+  it("keeps a real PR number and drops a hallucinated one", () => {
+    expect(refsOf(groundRefs(wrap([{ type: "pr", id: "7" }, { type: "pr", id: "999" }]), cs))).toEqual([
+      { type: "pr", id: "7" },
+    ]);
   });
 });
 

@@ -3,4 +3,5 @@ export declare function mergeResults(results: SummarizeResult[]): SummarizeResul
 export declare function entryBlock(e: ChangeEntry, maxBodyChars: number): string;
 export declare function buildMessages(entries: ChangeEntry[], config: Config): ChatMessage[];
 export declare function batchEntries(entries: ChangeEntry[], config: Config): ChangeEntry[][];
+export declare function groundRefs(result: SummarizeResult, changeSet: ChangeSet): SummarizeResult;
 export declare function summarize(changeSet: ChangeSet, config: Config, llm: Llm): Promise<SummarizeResult>;
