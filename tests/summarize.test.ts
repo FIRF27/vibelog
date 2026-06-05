@@ -119,9 +119,17 @@ describe("summarize", () => {
       return "not json";
     };
     await expect(summarize(changeSet, { ...DEFAULT_CONFIG, batchSize: 100 }, llm)).rejects.toThrow(
-      /LLM returned unparseable output/,
+      /did not match the changelog schema/,
     );
     expect(n).toBe(2);
+  });
+
+  it("fails loudly (not a silent no-op) when the model returns valid JSON in the wrong shape", async () => {
+    // e.g. an endpoint that ignores json_object and returns its own shape
+    const llm = async () => JSON.stringify({ release_notes: "Added a cool feature" });
+    await expect(summarize(changeSet, { ...DEFAULT_CONFIG, batchSize: 100 }, llm)).rejects.toThrow(
+      /sections|does not|did not match/i,
+    );
   });
 
   it("does not abort the run when the model returns null content (the '{}' fallback)", async () => {

@@ -96,12 +96,34 @@ async function summarizeBatch(entries: ChangeEntry[], config: Config, llm: Llm):
   for (let attempt = 0; attempt < 2; attempt++) {
     const raw = await llm(messages);
     try {
-      return SummarizeResultSchema.parse(JSON.parse(raw));
+      const parsed = JSON.parse(raw);
+      const result = SummarizeResultSchema.parse(parsed);
+      // A non-empty JSON object that lacks "sections" parsed to an empty result only via
+      // the tolerant schema — i.e. the endpoint returned content in the wrong shape (it
+      // likely doesn't honor response_format json_object). Fail loudly instead of silently
+      // emitting "no changes". ("{}" / null-content stays a legitimate no-op fallback.)
+      const wrongShape =
+        result.sections.length === 0 &&
+        !result.breaking &&
+        parsed !== null &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        Object.keys(parsed).length > 0 &&
+        !("sections" in parsed);
+      if (wrongShape) throw new Error(`JSON is missing "sections" (got keys: ${Object.keys(parsed).join(", ")})`);
+      return result;
     } catch (err) {
-      if (attempt === 1) throw new Error(`LLM returned unparseable output: ${String(err)}`);
+      if (attempt === 1) {
+        throw new Error(
+          `LLM output did not match the changelog schema: ${String(err)} — the model/endpoint may not support response_format json_object; try a JSON-mode-capable model.`,
+        );
+      }
       // Feed the failure back so the retry can repair its output instead of
       // (at low temperature) likely reproducing the same invalid response.
-      messages.push({ role: "user", content: `Your previous response was invalid: ${String(err)}. Respond with ONLY valid JSON matching the schema.` });
+      messages.push({
+        role: "user",
+        content: `Your previous response was invalid: ${String(err)}. Respond with ONLY valid JSON: a top-level object with a "sections" array.`,
+      });
     }
   }
   throw new Error("unreachable");
