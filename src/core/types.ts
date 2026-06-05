@@ -10,6 +10,20 @@ export const CATEGORIES = [
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 
+// Chars with no visible content: C0/C1 controls + bidi/directional formatting. Built via
+// RegExp() to avoid embedding literal control characters in source.
+const NON_DISPLAY = new RegExp(
+  "[\\u0000-\\u001f\\u007f-\\u009f\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]",
+  "g",
+);
+
+// Single-line, display-safe form of a summary/heading: whitespace collapsed, control/bidi
+// stripped, trimmed. Empty result means "no visible content". Used both to drop empty
+// entries at parse time and to render safe bullets, so the two stay consistent.
+export function visibleText(s: string): string {
+  return s.replace(/\s+/g, " ").replace(NON_DISPLAY, "").trim();
+}
+
 export const RefSchema = z.object({
   type: z.enum(["pr", "commit"]),
   // Models routinely emit the PR number as a JSON number; coerce 42 -> "42" losslessly.
@@ -57,7 +71,9 @@ export const SectionSchema = z.object({
               e !== null &&
               typeof e === "object" &&
               typeof (e as { summary?: unknown }).summary === "string" &&
-              (e as { summary: string }).summary.trim().length > 0,
+              // drop entries whose summary has no VISIBLE content (whitespace- or
+              // control/bidi-only), so they can't render as an empty "- " bullet.
+              visibleText((e as { summary: string }).summary).length > 0,
           )
         : // a missing/non-array entries key degrades to an empty (render-skipped) section
           [],

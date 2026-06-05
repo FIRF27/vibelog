@@ -96,12 +96,14 @@ async function summarizeBatch(entries: ChangeEntry[], config: Config, llm: Llm):
   for (let attempt = 0; attempt < 2; attempt++) {
     const raw = await llm(messages);
     try {
-      const parsed = JSON.parse(raw);
+      // null / null-content normalizes to {} (a legitimate empty no-op).
+      const parsed = JSON.parse(raw) ?? {};
       const result = SummarizeResultSchema.parse(parsed);
-      // A non-empty JSON object that lacks "sections" parsed to an empty result only via
-      // the tolerant schema — i.e. the endpoint returned content in the wrong shape (it
-      // likely doesn't honor response_format json_object). Fail loudly instead of silently
-      // emitting "no changes". ("{}" / null-content stays a legitimate no-op fallback.)
+      // A non-empty JSON object carrying NEITHER recognized schema key ("sections" or
+      // "breaking") parsed to an empty result only via the tolerant schema — i.e. the
+      // endpoint returned content in the wrong shape (it likely doesn't honor
+      // response_format json_object). Fail loudly instead of silently emitting "no
+      // changes". A terse {"breaking": false} (or "{}") is a valid no-op and is kept.
       const wrongShape =
         result.sections.length === 0 &&
         !result.breaking &&
@@ -109,7 +111,8 @@ async function summarizeBatch(entries: ChangeEntry[], config: Config, llm: Llm):
         typeof parsed === "object" &&
         !Array.isArray(parsed) &&
         Object.keys(parsed).length > 0 &&
-        !("sections" in parsed);
+        !("sections" in parsed) &&
+        !("breaking" in parsed);
       if (wrongShape) throw new Error(`JSON is missing "sections" (got keys: ${Object.keys(parsed).join(", ")})`);
       return result;
     } catch (err) {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 export declare const CATEGORIES: readonly ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"];
 export type Category = (typeof CATEGORIES)[number];
+export declare function visibleText(s: string): string;
 export declare const RefSchema: z.ZodObject<{
     type: z.ZodEnum<{
         pr: "pr";

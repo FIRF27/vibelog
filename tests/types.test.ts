@@ -38,6 +38,14 @@ describe("SummarizeResultSchema", () => {
     expect(parsed.sections[0].entries.map((e) => e.summary)).toEqual(["real"]);
   });
 
+  it("drops an entry whose summary is only control/bidi chars (no visible content)", () => {
+    const bidi = String.fromCharCode(0x202e).repeat(2);
+    const parsed = SummarizeResultSchema.parse({
+      sections: [{ category: "Added", entries: [{ summary: bidi }, { summary: "real" }] }],
+    });
+    expect(parsed.sections[0].entries.map((e) => e.summary)).toEqual(["real"]);
+  });
+
   it("drops a malformed ref (missing id / bad type) instead of aborting the batch", () => {
     const parsed = SummarizeResultSchema.parse({
       sections: [

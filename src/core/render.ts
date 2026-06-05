@@ -1,18 +1,10 @@
-import { CATEGORIES, type SummarizeResult, type Ref } from "./types.js";
+import { CATEGORIES, visibleText, type SummarizeResult, type Ref } from "./types.js";
 
 export interface RenderMeta {
   version: string;
   date?: string;
   repoUrl?: string;
 }
-
-// C0/C1 control chars (the whitespace ones are handled by the \s collapse first) plus
-// bidi/directional formatting chars that could visually reorder rendered text.
-// Built via RegExp() to avoid embedding literal control characters in source.
-const UNSAFE_CHARS = new RegExp(
-  "[\\u0000-\\u001f\\u007f-\\u009f\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]",
-  "g",
-);
 
 // Ref ids are PR numbers (digits) or commit shas (hex). Strip anything else so a
 // crafted id like "1](http://evil)" can't break out of the markdown link.
@@ -32,10 +24,10 @@ function renderRef(ref: Ref, repoUrl?: string): string {
 
 export function renderChangelog(result: SummarizeResult, meta: RenderMeta): string {
   const lines: string[] = [];
-  // version comes from --version-name / the action input (often a tag/branch name): collapse
-  // whitespace, strip control/bidi chars, and drop "[]" so it can't forge a heading or break
-  // out of the "[version]" wrapper. repoUrl: strip chars that would break the markdown link.
-  const version = meta.version.replace(/\s+/g, " ").replace(UNSAFE_CHARS, "").replace(/[[\]]/g, "").trim();
+  // version comes from --version-name / the action input (often a tag/branch name): make it
+  // display-safe (collapse whitespace, strip control/bidi) and drop "[]" so it can't forge a
+  // heading or break out of the "[version]" wrapper. repoUrl: strip link-breaking chars.
+  const version = visibleText(meta.version.replace(/[[\]]/g, "")) || "Unreleased";
   const repoUrl = meta.repoUrl?.replace(/[\s()[\]]/g, "");
   const heading =
     version === "Unreleased" || !meta.date ? `## [${version}]` : `## [${version}] - ${meta.date}`;
@@ -47,17 +39,16 @@ export function renderChangelog(result: SummarizeResult, meta: RenderMeta): stri
 
   for (const category of CATEGORIES) {
     const section = result.sections.find((s) => s.category === category);
-    if (!section || section.entries.length === 0) continue;
-    lines.push(`### ${category}`, "");
+    if (!section) continue;
+    const bullets: string[] = [];
     for (const entry of section.entries) {
-      // Collapse newlines/whitespace (so an LLM summary can't forge "## "/"### " headers
-      // or list items), THEN strip remaining control + bidi chars (so e.g. U+202E can't
-      // visually reorder the rendered changelog).
-      const summary = entry.summary.replace(/\s+/g, " ").replace(UNSAFE_CHARS, "").trim();
+      const summary = visibleText(entry.summary);
+      if (!summary) continue; // a summary that sanitized to nothing -> no bullet
       const refs = entry.refs.map((r) => renderRef(r, repoUrl)).filter(Boolean).join(", ");
-      lines.push(refs ? `- ${summary} (${refs})` : `- ${summary}`);
+      bullets.push(refs ? `- ${summary} (${refs})` : `- ${summary}`);
     }
-    lines.push("");
+    if (bullets.length === 0) continue; // no visible bullets -> skip the category header
+    lines.push(`### ${category}`, "", ...bullets, "");
   }
 
   return lines.join("\n").trimEnd() + "\n";

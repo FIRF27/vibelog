@@ -95,6 +95,16 @@ describe("renderChangelog", () => {
     expect(md).toContain("- safeevil");
   });
 
+  it("skips the bullet and its (now-empty) section when a summary sanitizes to nothing", () => {
+    const ctrl = String.fromCharCode(0x202e).repeat(3);
+    const md = renderChangelog(
+      { breaking: false, sections: [{ category: "Added", entries: [{ summary: ctrl, refs: [] }] }] },
+      { version: "1.0.0", date: "2026-06-02" },
+    );
+    expect(md.split("\n").some((l) => l.startsWith("- "))).toBe(false); // no bullet line
+    expect(md).not.toContain("### Added"); // empty section header skipped
+  });
+
   it("drops an all-symbol ref id instead of emitting an empty [#]() link", () => {
     const md = renderChangelog(
       { breaking: false, sections: [{ category: "Added", entries: [{ summary: "X", refs: [{ type: "pr", id: "!!!" }] }] }] },

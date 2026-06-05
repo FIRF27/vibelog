@@ -132,6 +132,12 @@ describe("summarize", () => {
     );
   });
 
+  it("treats a terse {breaking:false} no-change object as a no-op, not a wrong-shape error", async () => {
+    const llm = async () => JSON.stringify({ breaking: false });
+    const result = await summarize(changeSet, { ...DEFAULT_CONFIG, batchSize: 100 }, llm);
+    expect(result.sections).toEqual([]);
+  });
+
   it("does not abort the run when the model returns null content (the '{}' fallback)", async () => {
     // makeLlm substitutes "{}" when message.content is null (refusal / length cutoff /
     // some OpenAI-compatible endpoints). That must degrade to an empty result, not crash.
