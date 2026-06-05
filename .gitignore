@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.log
 .env
+.openaikey
 
 # Note: dist-action/ is intentionally committed — GitHub Actions run from the
 # bundled output, so the ncc bundle must be tracked in the repo.
