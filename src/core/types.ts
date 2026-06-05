@@ -152,6 +152,8 @@ export interface Config {
   batchSize: number;
   maxBodyChars: number;
   maxBatchChars: number;
+  // Output language for summaries (e.g. "中文", "Spanish"). Unset = model default.
+  language?: string;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -172,6 +174,7 @@ export const PartialConfigSchema = z.strictObject({
   batchSize: z.number().int().positive().optional(),
   maxBodyChars: z.number().int().positive().optional(),
   maxBatchChars: z.number().int().positive().optional(),
+  language: z.string().min(1).optional(),
 });
 
 export type ChatMessage = { role: "system" | "user"; content: string };

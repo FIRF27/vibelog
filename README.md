@@ -60,6 +60,7 @@ npx vibelog --model llama3.1 --version-name v1.2.0
 | `--model <model>` | LLM model id | `gpt-4.1-mini` |
 | `--base-url <url>` | OpenAI-compatible base URL | OpenAI default |
 | `--repo-url <url>` | Base URL for PR/commit links | inferred from `origin` |
+| `--language <lang>` | Language for the generated summaries (e.g. `中文`) | model default |
 | `--config <file>` | Path to a config file | `vibelog.config.json` |
 | `--write` | Prepend into the changelog file instead of printing | off |
 | `--output <file>` | File to write when `--write` is set | `CHANGELOG.md` |
@@ -69,7 +70,7 @@ npx vibelog --model llama3.1 --version-name v1.2.0
 - `OPENAI_API_KEY` — API key (required to call the model).
 - `OPENAI_BASE_URL` — OpenAI-compatible endpoint override.
 - `GITHUB_TOKEN` — enables fetching PR metadata.
-- `VIBELOG_MODEL`, `VIBELOG_BASE_URL`, `VIBELOG_REPO_URL`
+- `VIBELOG_MODEL`, `VIBELOG_BASE_URL`, `VIBELOG_REPO_URL`, `VIBELOG_LANGUAGE`
   — config overrides (lower precedence than CLI flags).
 
 ### Config file (`vibelog.config.json`)
@@ -79,6 +80,7 @@ npx vibelog --model llama3.1 --version-name v1.2.0
   "model": "gpt-4.1-mini",
   "repoUrl": "https://github.com/me/proj",
   "ignorePatterns": ["^Merge ", "^chore", "^ci", "^build", "^style", "^docs"],
+  "language": "中文",
   "batchSize": 100,
   "maxBodyChars": 2000
 }

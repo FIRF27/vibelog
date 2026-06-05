@@ -58,6 +58,7 @@ async function main(): Promise<void> {
     .option("--model <model>")
     .option("--base-url <url>")
     .option("--repo-url <url>")
+    .option("--language <lang>", "language for the generated summaries (default: model default)")
     .option("--config <file>")
     .option("--write", "prepend into CHANGELOG.md instead of printing")
     .option("--output <file>", "file to write when --write is set", "CHANGELOG.md")
@@ -68,6 +69,7 @@ async function main(): Promise<void> {
     model: opts.model || undefined,
     baseUrl: opts.baseUrl || undefined,
     repoUrl: opts.repoUrl || undefined,
+    language: opts.language || undefined,
   };
   const config = mergeConfig({
     defaults: DEFAULT_CONFIG,

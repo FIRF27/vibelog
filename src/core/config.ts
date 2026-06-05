@@ -19,6 +19,7 @@ export function configFromEnv(env: Env): Partial<Config> {
     model: env.VIBELOG_MODEL || undefined,
     baseUrl: env.OPENAI_BASE_URL || env.VIBELOG_BASE_URL || undefined,
     repoUrl: env.VIBELOG_REPO_URL || undefined,
+    language: env.VIBELOG_LANGUAGE || undefined,
   });
 }
 

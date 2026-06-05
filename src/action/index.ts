@@ -21,6 +21,7 @@ async function run(): Promise<void> {
     const flags: Partial<Config> = {
       model: core.getInput("model") || undefined,
       baseUrl: core.getInput("base-url") || undefined,
+      language: core.getInput("language") || undefined,
     };
     const config = mergeConfig({ defaults: DEFAULT_CONFIG, env: configFromEnv(process.env), flags });
 

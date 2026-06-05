@@ -61,8 +61,11 @@ export function entryBlock(e: ChangeEntry, maxBodyChars: number): string {
 
 export function buildMessages(entries: ChangeEntry[], config: Config): ChatMessage[] {
   const blocks = entries.map((e) => entryBlock(e, config.maxBodyChars));
+  const system = config.language
+    ? `${SYSTEM_PROMPT}\n- Write every "summary" in ${config.language}; keep code identifiers, paths, and proper nouns unchanged.`
+    : SYSTEM_PROMPT;
   return [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: system },
     { role: "user", content: `Changes:\n${blocks.join("\n\n")}` },
   ];
 }

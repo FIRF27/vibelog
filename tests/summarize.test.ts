@@ -47,6 +47,14 @@ describe("buildMessages", () => {
     expect(user).toContain("Add dark mode");
   });
 
+  it("injects a language rule into the system prompt only when language is set", () => {
+    const withLang = buildMessages(changeSet.entries, { ...DEFAULT_CONFIG, language: "中文" });
+    const sys = withLang.find((m) => m.role === "system")!.content;
+    expect(sys).toContain("中文");
+    const without = buildMessages(changeSet.entries, DEFAULT_CONFIG);
+    expect(without.find((m) => m.role === "system")!.content).not.toMatch(/Write every "summary" in/);
+  });
+
   it("truncates an oversized commit subject (not just the body)", () => {
     const entries = [{ commit: { sha: "s", subject: "x".repeat(5000), body: "", author: "a" } }];
     const msgs = buildMessages(entries, { ...DEFAULT_CONFIG, maxBodyChars: 10 });

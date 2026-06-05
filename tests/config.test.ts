@@ -4,10 +4,11 @@ import { DEFAULT_CONFIG } from "../src/core/types.js";
 
 describe("config", () => {
   it("reads env vars", () => {
-    const env = { VIBELOG_MODEL: "gpt-4o", OPENAI_BASE_URL: "http://x" };
+    const env = { VIBELOG_MODEL: "gpt-4o", OPENAI_BASE_URL: "http://x", VIBELOG_LANGUAGE: "中文" };
     const c = configFromEnv(env);
     expect(c.model).toBe("gpt-4o");
     expect(c.baseUrl).toBe("http://x");
+    expect(c.language).toBe("中文");
   });
 
   it("treats empty env values as unset (no masking, no empty model)", () => {

@@ -96,6 +96,7 @@ export interface Config {
     batchSize: number;
     maxBodyChars: number;
     maxBatchChars: number;
+    language?: string;
 }
 export declare const DEFAULT_CONFIG: Config;
 export declare const PartialConfigSchema: z.ZodObject<{
@@ -106,6 +107,7 @@ export declare const PartialConfigSchema: z.ZodObject<{
     batchSize: z.ZodOptional<z.ZodNumber>;
     maxBodyChars: z.ZodOptional<z.ZodNumber>;
     maxBatchChars: z.ZodOptional<z.ZodNumber>;
+    language: z.ZodOptional<z.ZodString>;
 }, z.core.$strict>;
 export type ChatMessage = {
     role: "system" | "user";
