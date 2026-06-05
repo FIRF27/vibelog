@@ -28,11 +28,14 @@ export OPENAI_API_KEY=sk-...
 export GITHUB_TOKEN=ghp_...
 
 # Print release notes for "last tag → HEAD" to stdout
-npx vibelog --version-name v1.2.0
+npx @firf27/vibelog --version-name v1.2.0
 
 # Or write them into CHANGELOG.md (prepended above the latest version)
-npx vibelog --version-name v1.2.0 --write
+npx @firf27/vibelog --version-name v1.2.0 --write
 ```
+
+Published as the scoped package **`@firf27/vibelog`**; the installed command is
+`vibelog` (`npm i -g @firf27/vibelog`, then run `vibelog`).
 
 No `GITHUB_TOKEN` or non-GitHub repo? vibelog automatically falls back to
 commit-messages-only.
@@ -47,7 +50,7 @@ vLLM, LM Studio, and more:
 # Local Ollama
 OPENAI_API_KEY=ollama \
 OPENAI_BASE_URL=http://localhost:11434/v1 \
-npx vibelog --model llama3.1 --version-name v1.2.0
+npx @firf27/vibelog --model llama3.1 --version-name v1.2.0
 ```
 
 ## CLI options

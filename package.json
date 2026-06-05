@@ -1,8 +1,11 @@
 {
-  "name": "vibelog",
+  "name": "@firf27/vibelog",
   "version": "0.1.0",
   "description": "Turn messy git history into clean release notes with AI.",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "vibelog": "dist/cli/index.js"
   },
