@@ -41,7 +41,8 @@ async function run(): Promise<void> {
       const client = new OpenAI({ apiKey, baseURL: config.baseUrl });
       const res = await client.chat.completions.create({
         model: config.model,
-        temperature: 0.2,
+        temperature: 0, // deterministic-as-possible so regenerating yields a stable changelog
+        seed: 1,
         response_format: { type: "json_object" },
         messages,
       });

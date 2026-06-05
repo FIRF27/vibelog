@@ -130,6 +130,13 @@ want full automation.
 vibelog sends commit subjects/bodies and associated PR titles/bodies/labels (bodies
 truncated to `maxBodyChars`). It does **not** send code diffs.
 
+## Reproducibility
+
+The notes are AI-generated. vibelog requests `temperature: 0` and a fixed `seed`, which
+keeps the section structure stable, but output is **not byte-for-byte reproducible** —
+regenerating can reword or regroup entries. Generate the changelog once per release and
+commit it (rather than regenerating and diffing on every run).
+
 ## Development
 
 ```bash
